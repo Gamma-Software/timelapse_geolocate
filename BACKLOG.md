@@ -15,5 +15,8 @@ and ideas to provide more functionalities.
   - Get the right zoom (from start to end gps point) to overview the entire trip
   - Trace a line from start to end of the gps points  
   - Get the map and locate the vehicle with a point
+  - Display the number of kilometer traveled
+- Send message in telegram that the video is ready
+- Do the workflow
 
 # Done
