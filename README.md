@@ -7,6 +7,7 @@ Create a timelapse video combining photos and their gps positions (displaying th
 - Keeps track of the gps positions during the timelapse
 - Display the current time
 - Display the current kilometer travelled
+- Display the current or nextto city
 - Display the a map to show the previous positions and the current one
 - Get the photos of the trip at even intervals synchronized with the data
 - Create a timelaspe combining all the photos
