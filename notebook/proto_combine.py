@@ -6,7 +6,7 @@ from datetime import datetime
 from os import walk
 
 
-def combine(map_path, frame_path, id):
+def combine(map_path, frame_path, id, video_out):
     x_offset = y_offset = 20
     map_image = cv2.imread(map_path)
     scale_percent = 80
@@ -37,6 +37,13 @@ def combine(map_path, frame_path, id):
     cv2.putText(frame,text,(10,30), cv2.FONT_HERSHEY_DUPLEX, 1,(0,0,0),2,cv2.LINE_AA)
     cv2.imwrite("../data/result/"+str(id)+".png", frame)
 
+    video_out.write(frame)
+
+frameSize = (1378, 625)
+video_out = cv2.VideoWriter('../data/result/output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, frameSize)
 
 for id in range(0, 39):
-    combine("../data/map/"+str(id)+".png", "../data/ggstrw/"+str(id)+".png", id)
+    combine("../data/map/"+str(id)+".png", "../data/ggstrw/"+str(id)+".png", id, video_out)
+
+video_out.release()
+
