@@ -1,1 +1,0 @@
-name = 'timelapsegeo_pkg'
