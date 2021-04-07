@@ -4,7 +4,7 @@ import numpy as np
 import cartopy.crs as ccrs
 import cartopy.io.img_tiles as cimgt
 import io
-from os import walk
+from os import walk, path
 import sys
 from urllib.request import urlopen, Request
 from PIL import Image
@@ -75,23 +75,29 @@ def generate_timelapse(cached_frames_folder: str, output_filename: str, framerat
     .   The function/method writes the specified image to video file. It must have the same size as has
     .   been specified when opening the video writer.
     """
+    # Check if the folder exists
+    if not path.exists(cached_frames_folder):
+        print("The ", cached_frames_folder, " does not exists")
+        return False
+    # Check if the framerate is correct
     if framerate <= 0:
         print("The framerate should be superior to 0")
         return  False
     # Get the frames in cache
     _, _, cached_frames_filenames = next(walk(cached_frames_folder))
-    frames = [cv2.imread(cached_frames_filename) for cached_frames_filename in cached_frames_filenames]
+    frames = [cv2.imread(cached_frames_folder + "/" + cached_frames_filename)
+              for cached_frames_filename in cached_frames_filenames]
     # Check if there are at least 2 frames to generate a timelapse
     if len(frames) < 2:
         print("There are not enough frames to generate a timelapse")
         return False
     # Check that all the frames are the same size
-    if True in [frames[0][:2] != frame[:2] for frame in frames]:
+    if True in [frames[0].shape[:2] != frame.shape[:2] for frame in frames]:
         print("The frames size are not consistent to be combined to generate a timelapse")
         return False
 
     # Init the video
-    video_out = cv2.VideoWriter(output_filename, cv2.VideoWriter_fourcc(*'mp4v'), framerate, frames[0][:2])
+    video_out = cv2.VideoWriter(output_filename, cv2.VideoWriter_fourcc(*'mp4v'), framerate, frames[0].shape[:2])
     # fill the video with the frames
     for frame in frames:
         video_out.write(frame)
