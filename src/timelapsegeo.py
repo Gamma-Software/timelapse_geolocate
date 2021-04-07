@@ -63,16 +63,21 @@ def generate_map():
     plt.close()
 
 
-def generate_timelapse(cached_frames_folder, output_filename, framerate):
+def generate_timelapse(cached_frames_folder: str, output_filename: str, framerate: int):
     """
     generate_timelapse(cached_frames_folder, output_filename, framerate) -> Success/Fail
     .   @brief Generates a timelapse video with cached combined frames
     .
     .   @param cached_frames_folder this is the folder where the frames are found to
+    .   @param output_filename this is the name of the video
+    .   @param framerate this is the framerate of the video
     .
     .   The function/method writes the specified image to video file. It must have the same size as has
     .   been specified when opening the video writer.
     """
+    if framerate <= 0:
+        print("The framerate should be superior to 0")
+        return  False
     # Get the frames in cache
     _, _, cached_frames_filenames = next(walk(cached_frames_folder))
     frames = [cv2.imread(cached_frames_filename) for cached_frames_filename in cached_frames_filenames]
