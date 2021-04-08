@@ -22,6 +22,9 @@ class TestGenerateTimelapse(TestCase):
         # Case 4 True: The folder contains two frames the same size
         print("Running Case 4")
         self.assertEqual(generate_timelapse("data/test4", "output.mp4", 10), True)
+        # Case 5 False: The folder does not exist
+        print("Running Case 5")
+        self.assertEqual(generate_timelapse("data/test5", "output.mp4", 10), False)
 
         # Remove output.mp4 generated if exists
         import os
