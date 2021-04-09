@@ -127,9 +127,9 @@ def parse_args(cmd_args: typing.Sequence[str]):
     # combine_parser.set_defaults(func=combine)
 
     generate_timelapse_parser = subparsers.add_parser('generate_timelapse', help="Generate a timelapse")
-    generate_timelapse_parser.add_argument('-f', '--cached_frames_folder', type=str, default=".", help="Cached frame folders")
-    generate_timelapse_parser.add_argument('-o', '--output_filename', type=str, default=".", help="Output filename")
-    generate_timelapse_parser.add_argument('-fr', '--framerate', type=str, default=".", help="Video framerate")
+    generate_timelapse_parser.add_argument('--cached_frames_folder', type=str, default=".", help="Cached frame folders")
+    generate_timelapse_parser.add_argument('--output_filename', type=str, default=".", help="Output filename")
+    generate_timelapse_parser.add_argument('--framerate', type=int, default=10, help="Video framerate")
     generate_timelapse_parser.set_defaults(func=generate_timelapse)
 
     # properties_parser = subparsers.add_parser('validate', help="Combine the map and the photo")
