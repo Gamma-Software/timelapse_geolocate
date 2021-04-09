@@ -106,7 +106,7 @@ def generate_timelapse(cached_frames_folder: str, output_filename: str, framerat
     return True  # Timelapse generated
 
 
-def manual(args: argparse.Namespace):
+def manual():
     print("Create a timelapse video combining photos and their gps positions (displaying the current position on a map)"
           " and the date and kilometer travelled. This project is first made for documenting a roadtrip and facilitate"
           " the sharing of the progress.")
@@ -135,6 +135,9 @@ def parse_args(cmd_args: typing.Sequence[str]):
     # properties_parser = subparsers.add_parser('validate', help="Combine the map and the photo")
     # properties_parser.add_argument('-b', '--branch', type=str, default="", help="Chaudron's branch")
     # properties_parser.set_defaults(func=combine)
+
+    parser_man = subparsers.add_parser("man", help="Open timelapsegeo manual")
+    parser_man.set_defaults(func=manual)
 
     parser.set_defaults(func=lambda x: parser.print_help())
     return parser.parse_args(args=cmd_args)
