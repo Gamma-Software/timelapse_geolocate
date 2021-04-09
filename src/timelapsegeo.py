@@ -63,7 +63,7 @@ def generate_map():
     plt.close()
 
 
-def generate_timelapse(cached_frames_folder: str, output_filename: str, framerate: int):
+def generate_timelapse(args):
     """
     generate_timelapse(cached_frames_folder, output_filename, framerate) -> Success/Fail
     .   @brief Generates a timelapse video with cached combined frames
@@ -76,16 +76,16 @@ def generate_timelapse(cached_frames_folder: str, output_filename: str, framerat
     .   been specified when opening the video writer.
     """
     # Check if the folder exists
-    if not path.exists(cached_frames_folder):
-        print("The ", cached_frames_folder, " does not exists")
+    if not path.exists(args.cached_frames_folder):
+        print("The ", args.cached_frames_folder, " does not exists")
         return False
     # Check if the framerate is correct
-    if framerate <= 0:
+    if args.framerate <= 0:
         print("The framerate should be superior to 0")
         return  False
     # Get the frames in cache
-    _, _, cached_frames_filenames = next(walk(cached_frames_folder))
-    frames = [cv2.imread(cached_frames_folder + "/" + cached_frames_filename)
+    _, _, cached_frames_filenames = next(walk(args.cached_frames_folder))
+    frames = [cv2.imread(args.cached_frames_folder + "/" + cached_frames_filename)
               for cached_frames_filename in cached_frames_filenames]
     # Check if there are at least 2 frames to generate a timelapse
     if len(frames) < 2:
@@ -97,12 +97,16 @@ def generate_timelapse(cached_frames_folder: str, output_filename: str, framerat
         return False
 
     # Init the video
-    video_out = cv2.VideoWriter(output_filename, cv2.VideoWriter_fourcc(*'mp4v'), framerate, frames[0].shape[:2])
+    video_out = cv2.VideoWriter(args.output_filename,
+                                cv2.VideoWriter_fourcc(*'mp4v'),
+                                args.framerate,
+                                frames[0].shape[:2][::-1]) # [::-1] is needed to reverse the tuple
     # fill the video with the frames
     for frame in frames:
         video_out.write(frame)
     # Do not forget to release the video instance to pass the destroy c++ method
     video_out.release()
+    print("Video output generate and saved in: " + args.output_filename)
     return True  # Timelapse generated
 
 
@@ -129,7 +133,7 @@ def parse_args(cmd_args: typing.Sequence[str]):
     generate_timelapse_parser = subparsers.add_parser('generate_timelapse', help="Generate a timelapse")
     generate_timelapse_parser.add_argument('--cached_frames_folder', type=str, default=".", help="Cached frame folders")
     generate_timelapse_parser.add_argument('--output_filename', type=str, default=".", help="Output filename")
-    generate_timelapse_parser.add_argument('--framerate', type=int, default=10, help="Video framerate")
+    generate_timelapse_parser.add_argument('--framerate', type=float, default=10.0, help="Video framerate")
     generate_timelapse_parser.set_defaults(func=generate_timelapse)
 
     # properties_parser = subparsers.add_parser('validate', help="Combine the map and the photo")
@@ -145,3 +149,4 @@ def parse_args(cmd_args: typing.Sequence[str]):
 
 if __name__ == '__main__':
     args = parse_args(sys.argv[1:])
+    sys.exit(args.func(args))
