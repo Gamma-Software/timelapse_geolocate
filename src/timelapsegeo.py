@@ -4,11 +4,13 @@ import numpy as np
 import cartopy.crs as ccrs
 import cartopy.io.img_tiles as cimgt
 import io
+from os import walk, path
 import sys
 from urllib.request import urlopen, Request
 from PIL import Image
 import argparse
 import typing
+import cv2
 
 """ See the README.md to understand the script
 """
@@ -61,7 +63,54 @@ def generate_map():
     plt.close()
 
 
-def manual(args: argparse.Namespace):
+def generate_timelapse(args):
+    """
+    generate_timelapse(cached_frames_folder, output_filename, framerate) -> Success/Fail
+    .   @brief Generates a timelapse video with cached combined frames
+    .
+    .   @param cached_frames_folder this is the folder where the frames are found to
+    .   @param output_filename this is the name of the video
+    .   @param framerate this is the framerate of the video
+    .
+    .   The function/method writes the specified image to video file. It must have the same size as has
+    .   been specified when opening the video writer.
+    """
+    # Check if the folder exists
+    if not path.exists(args.cached_frames_folder):
+        print("The ", args.cached_frames_folder, " does not exists")
+        return False
+    # Check if the framerate is correct
+    if args.framerate <= 0:
+        print("The framerate should be superior to 0")
+        return  False
+    # Get the frames in cache
+    _, _, cached_frames_filenames = next(walk(args.cached_frames_folder))
+    frames = [cv2.imread(args.cached_frames_folder + "/" + cached_frames_filename)
+              for cached_frames_filename in cached_frames_filenames]
+    # Check if there are at least 2 frames to generate a timelapse
+    if len(frames) < 2:
+        print("There are not enough frames to generate a timelapse")
+        return False
+    # Check that all the frames are the same size
+    if True in [frames[0].shape[:2] != frame.shape[:2] for frame in frames]:
+        print("The frames size are not consistent to be combined to generate a timelapse")
+        return False
+
+    # Init the video
+    video_out = cv2.VideoWriter(args.output_filename,
+                                cv2.VideoWriter_fourcc(*'mp4v'),
+                                args.framerate,
+                                frames[0].shape[:2][::-1]) # [::-1] is needed to reverse the tuple
+    # fill the video with the frames
+    for frame in frames:
+        video_out.write(frame)
+    # Do not forget to release the video instance to pass the destroy c++ method
+    video_out.release()
+    print("Video output generate and saved in: " + args.output_filename)
+    return True  # Timelapse generated
+
+
+def manual():
     print("Create a timelapse video combining photos and their gps positions (displaying the current position on a map)"
           " and the date and kilometer travelled. This project is first made for documenting a roadtrip and facilitate"
           " the sharing of the progress.")
@@ -81,13 +130,18 @@ def parse_args(cmd_args: typing.Sequence[str]):
     # combine_parser.add_argument('-b', '--branch', type=str, default="", help="Chaudron's branch")
     # combine_parser.set_defaults(func=combine)
 
-    # generate_timelapse_parser = subparsers.add_parser('validate', help="Combine the map and the photo")
-    # generate_timelapse_parser.add_argument('-b', '--branch', type=str, default="", help="Chaudron's branch")
-    # generate_timelapse_parser.set_defaults(func=combine)
+    generate_timelapse_parser = subparsers.add_parser('generate_timelapse', help="Generate a timelapse")
+    generate_timelapse_parser.add_argument('--cached_frames_folder', type=str, default=".", help="Cached frame folders")
+    generate_timelapse_parser.add_argument('--output_filename', type=str, default=".", help="Output filename")
+    generate_timelapse_parser.add_argument('--framerate', type=float, default=10.0, help="Video framerate")
+    generate_timelapse_parser.set_defaults(func=generate_timelapse)
 
     # properties_parser = subparsers.add_parser('validate', help="Combine the map and the photo")
     # properties_parser.add_argument('-b', '--branch', type=str, default="", help="Chaudron's branch")
     # properties_parser.set_defaults(func=combine)
+
+    parser_man = subparsers.add_parser("man", help="Open timelapsegeo manual")
+    parser_man.set_defaults(func=manual)
 
     parser.set_defaults(func=lambda x: parser.print_help())
     return parser.parse_args(args=cmd_args)
@@ -95,3 +149,4 @@ def parse_args(cmd_args: typing.Sequence[str]):
 
 if __name__ == '__main__':
     args = parse_args(sys.argv[1:])
+    sys.exit(args.func(args))
