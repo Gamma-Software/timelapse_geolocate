@@ -1,4 +1,8 @@
-import pynmea2, serial, time, sys, datetime, io
+import pynmea2
+import serial
+import time
+import sys
+import io
 
 
 def read_gps_data_log():
