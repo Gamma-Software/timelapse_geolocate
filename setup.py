@@ -41,7 +41,7 @@ setuptools.setup(
     url="https://github.com/Gamma-Software/TimelapseGeolocate",
     entry_points={
         "console_scripts": [
-            "timelapsegeo=src.timelapse:main",
+            "timelapsegeo=src.timelapsegeo:main",
         ]
     },
     classifiers=[
