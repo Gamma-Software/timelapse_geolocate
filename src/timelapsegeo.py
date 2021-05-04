@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import time
+
 import matplotlib.pyplot as plt
 import numpy as np
 import cartopy.crs as ccrs
@@ -11,6 +13,9 @@ from PIL import Image
 import argparse
 import typing
 import cv2
+
+from src.ReadGPSdata import read_gps_data_log
+from src.RaspCameraDriver import take_picture_annotate
 
 """ See the README.md to understand the script
 """
@@ -82,7 +87,7 @@ def generate_timelapse(args):
     # Check if the framerate is correct
     if args.framerate <= 0:
         print("The framerate should be superior to 0")
-        return  False
+        return False
     # Get the frames in cache
     _, _, cached_frames_filenames = next(walk(args.cached_frames_folder))
     frames = [cv2.imread(args.cached_frames_folder + "/" + cached_frames_filename)
@@ -110,6 +115,16 @@ def generate_timelapse(args):
     return True  # Timelapse generated
 
 
+def take_pictures(args):
+    try:
+        while True:
+            gps_data = read_gps_data_log()
+            take_picture_annotate(args.path_to_image_folder, args.width, args.height, gps_data["latitude"], gps_data["longitude"])
+            time.sleep(args.timelapse)
+    except KeyboardInterrupt:
+        sys.stderr.write('Ctrl-C pressed, pictures saved in '+args.path_to_image_folder)
+
+
 def manual():
     print("Create a timelapse video combining photos and their gps positions (displaying the current position on a map)"
           " and the date and kilometer travelled. This project is first made for documenting a roadtrip and facilitate"
@@ -125,6 +140,13 @@ def parse_args(cmd_args: typing.Sequence[str]):
     generate_parser.add_argument('localize', type=str, help='Get the gps position and generate a map with the current'
                                                             ' and past gps positions')
     generate_parser.set_defaults(func=generate_map)
+
+    take_photo_annotate_parser = subparsers.add_parser('take_photo', help='Takes a photo with the annotation of the timestamp and location')
+    take_photo_annotate_parser.add_argument('--timelapse', type=float, default=10, help='')  # Every 10 seconds
+    take_photo_annotate_parser.add_argument('--width', type=int, default=3280, help='')
+    take_photo_annotate_parser.add_argument('--height', type=int, default=2464, help='')
+    take_photo_annotate_parser.add_argument('--path_to_image_folder', type=str, help='')
+    take_photo_annotate_parser.set_defaults(func=take_pictures)
 
     generate_timelapse_parser = subparsers.add_parser('generate_timelapse', help="Generate a timelapse")
     generate_timelapse_parser.add_argument('--cached_frames_folder', type=str, default=".", help="Cached frame folders")
