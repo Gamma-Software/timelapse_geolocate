@@ -22,7 +22,7 @@ __credits__ = "None for now"
 """
 
 
-def generate_map():
+def generate_map(args):
     """
         Get the current position and the last positions to create a map
         result: Generates a map displaying the gps positions (previous position in blue and current in red)
@@ -126,19 +126,11 @@ def parse_args(cmd_args: typing.Sequence[str]):
                                                             ' and past gps positions')
     generate_parser.set_defaults(func=generate_map)
 
-    # combine_parser = subparsers.add_parser('validate', help="Combine the map and the photo")
-    # combine_parser.add_argument('-b', '--branch', type=str, default="", help="Chaudron's branch")
-    # combine_parser.set_defaults(func=combine)
-
     generate_timelapse_parser = subparsers.add_parser('generate_timelapse', help="Generate a timelapse")
     generate_timelapse_parser.add_argument('--cached_frames_folder', type=str, default=".", help="Cached frame folders")
     generate_timelapse_parser.add_argument('--output_filename', type=str, default=".", help="Output filename")
     generate_timelapse_parser.add_argument('--framerate', type=float, default=10.0, help="Video framerate")
     generate_timelapse_parser.set_defaults(func=generate_timelapse)
-
-    # properties_parser = subparsers.add_parser('validate', help="Combine the map and the photo")
-    # properties_parser.add_argument('-b', '--branch', type=str, default="", help="Chaudron's branch")
-    # properties_parser.set_defaults(func=combine)
 
     parser_man = subparsers.add_parser("man", help="Open timelapsegeo manual")
     parser_man.set_defaults(func=manual)
@@ -147,6 +139,11 @@ def parse_args(cmd_args: typing.Sequence[str]):
     return parser.parse_args(args=cmd_args)
 
 
-if __name__ == '__main__':
-    args = parse_args(sys.argv[1:])
+def main_args(cmd_args: typing.Sequence[str]):
+    args = parse_args(cmd_args)
     sys.exit(args.func(args))
+
+
+def main():
+    main_args(sys.argv[1:])
+    sys.exit("Incorrect configuration")
