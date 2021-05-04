@@ -3,7 +3,7 @@
 # TimelapseGeolocate
 Create a timelapse video combining photos and their gps positions (displaying the current position on a map) and the date and kilometer travelled. This project is first made for documenting a roadtrip and facilitate the sharing of the progress.
 
-## Features
+## Key Features
 - Keeps track of the gps positions during the timelapse
 - Display the current time
 - Display the current kilometer travelled
@@ -11,6 +11,9 @@ Create a timelapse video combining photos and their gps positions (displaying th
 - Display the a map to show the previous positions and the current one
 - Get the photos of the trip at even intervals synchronized with the data
 - Create a timelaspe combining all the photos
+
+## Safeguards
+- Ensure to not capture a new timelapse if already processing one (unless this can be threaded)
 
 ## Requirements
 TODO
