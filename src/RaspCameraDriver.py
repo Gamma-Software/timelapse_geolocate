@@ -1,5 +1,7 @@
+import time
+import sys
 from picamera import PiCamera
-from subprocess import call
+from src.ReadGPSdata import read_gps_data_log
 from time import sleep
 import datetime as dt
 import itertools
@@ -25,3 +27,12 @@ def take_picture_annotate(picture_cache_location, width, height, latitude, longi
                    str(longitude) + ".png")
     # Close camera instance
     camera.stop_preview()
+
+
+while True:
+    try:
+        gps_data = read_gps_data_log()
+        take_picture_annotate(3280, 2464, gps_data["lat"], gps_data["lon"])
+        time.sleep(10)
+    except KeyboardInterrupt:
+        sys.exit()
