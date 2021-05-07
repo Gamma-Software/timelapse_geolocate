@@ -8,23 +8,24 @@ import io
 def read_gps_data_log():
     return_values = {"lat": 0.0, "lon": 0.0}
 
-    port = "/tty/serial0"
+    port = "/dev/serial0"
     try:
         # try to read a line of data from the serial port and parse
         with serial.Serial(port, 115200, timeout=1) as ser:
             print("Opening port: "+port)
             # 'warm up' with reading some input
             for i in range(5):
-                ser.readline()
+                print("Dry run:", ser.readline())
 
             sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
 
             while 1:
                 print("Getting NMEA data")
                 try:
-                    nmeaobj = pynmea2.parse(sio.readline().decode('ascii', errors='replace'))
+                    nmeaobj = pynmea2.parse(sio.readline())
                     return_values["lat"] = nmeaobj.latitude
                     return_values["lon"] = nmeaobj.longitude
+                    print(return_values)
                     break
                 except pynmea2.ParseError as e:
                     print('Parse error: {}'.format(e))
