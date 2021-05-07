@@ -23,4 +23,5 @@ and ideas to provide more functionalities.
 
 
 # Note
-J’ai du augmenter la memoire allouee pour le GPU du raspberry pi zeroW a 256gb
+J’ai du augmenter la memoire allouee pour le GPU du raspberry pi zeroW a 256gb.
+Ajouté la commande "awb_auto_is_greyworld=1" dans /boot/config.txt
