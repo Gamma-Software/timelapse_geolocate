@@ -20,3 +20,7 @@ and ideas to provide more functionalities.
 - Do the workflow
 
 # Done
+
+
+# Note
+J’ai du augmenter la memoire allouee pour le GPU du raspberry pi zeroW a 256gb
