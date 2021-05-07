@@ -23,13 +23,18 @@ def take_picture_annotate(picture_cache_location, width, height, latitude, longi
 
     # Warm up the raspberry camera
     print("Warm up")
+    logging.info("Warming up")
     camera.start_preview()
     sleep(2)
     # Take the picture
     camera.capture(picture_cache_location + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + "-" + str(latitude) + "-" + str(longitude) + ".png")
     print("Capture " + picture_cache_location + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + "-" + str(latitude) + "-" + str(longitude) + ".png")
+    logging.info("Capture " + picture_cache_location + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + "-" + str(latitude) + "-" + str(longitude) + ".png")
     # Close camera instance
     camera.stop_preview()
+
+import logging
+logging.basicConfig(filename='/home/camera/images/script.log', filemode="a", level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 try:
     gps_data = read_gps_data_log()
