@@ -6,7 +6,7 @@ import io
 
 
 def read_gps_data_log():
-    return_values = {"lat": 0.0, "lon": 0.0}
+    return_values = {"lat": 0.00, "lon": 0.00}
 
     port = "/dev/serial0"
     try:
@@ -23,10 +23,12 @@ def read_gps_data_log():
                 print("Getting NMEA data")
                 try:
                     nmeaobj = pynmea2.parse(sio.readline())
-                    return_values["lat"] = nmeaobj.latitude
-                    return_values["lon"] = nmeaobj.longitude
+                    print(nmeaobj)
+                    return_values["lat"] = round(nmeaobj.latitude, 2)
+                    return_values["lon"] = round(nmeaobj.longitude, 2)
                     print(return_values)
-                    break
+                    if return_values["lat"] != 0.00 or return_values["lon"] != 0.00:
+                        break
                 except pynmea2.ParseError as e:
                     print('Parse error: {}'.format(e))
                     print("Retry getting a correct NMEA data")

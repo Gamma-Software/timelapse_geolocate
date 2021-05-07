@@ -11,7 +11,7 @@ import itertools
 def take_picture_annotate(picture_cache_location, width, height, latitude, longitude):
     camera = PiCamera()
     camera.resolution = (width, height)
-    # camera.awb_mode = "greyworld"
+    #camera.awb_mode = "greyworld"
     camera.annotate_background = picamera.Color('black')
     text = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + "-lat:" + str(latitude) + "-lon:" + str(longitude)
     # Display long text
@@ -33,7 +33,6 @@ def take_picture_annotate(picture_cache_location, width, height, latitude, longi
 
 try:
     gps_data = read_gps_data_log()
-    take_picture_annotate("/home/camera/images/", 3280, 2464, gps_data["lat"], gps_data["lon"])
-    time.sleep(10)
+    take_picture_annotate("/home/camera/images/", 1920, 1080, gps_data["lat"], gps_data["lon"])
 except KeyboardInterrupt:
     sys.exit()
