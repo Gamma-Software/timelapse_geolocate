@@ -35,7 +35,8 @@ def read_gps_data_log():
                         nmeaobj = pynmea2.parse(sio.readline())
                         print(nmeaobj)
                         logging.info(nmeaobj)
-                        if isinstance(nmeaobj, pynmea2.types.RMC) and nmeaobj.latitude != 0.0 and nmeaobj.longitude != 0.0:
+                        if nmeaobj.is_valid and isinstance(nmeaobj, pynmea2.types.RMC) and nmeaobj.latitude != 0.0 and nmeaobj.longitude != 0.0:
+
                             logging.debug(str(type(nmeaobj.latitude)) + str(nmeaobj.latitude))
                             logging.debug(str(type(nmeaobj.longitude)) + str(nmeaobj.longitude))
                             return_values["lat"] = round(nmeaobj.latitude, 4)

@@ -52,5 +52,5 @@ def take_picture_annotate(picture_cache_location, width, height, latitude, longi
 
 logging.basicConfig(
     filename='/home/camera/images/tripcam' + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log',
-    filemode="a", level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s', datefmt='%m/$
+    filemode="a", level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s', datefmt="%m/$")
 take_picture_annotate("/home/camera/images/", 1920, 1080, 0.0, 0.0)
