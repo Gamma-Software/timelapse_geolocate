@@ -6,7 +6,7 @@ from ReadGPSdata import read_gps_data_log
 from time import sleep
 import datetime as dt
 import itertools
-
+import logging
 
 def take_picture_annotate(picture_cache_location, width, height, latitude, longitude):
     camera = PiCamera()
@@ -25,19 +25,32 @@ def take_picture_annotate(picture_cache_location, width, height, latitude, longi
     print("Warm up")
     logging.info("Warming up")
     camera.start_preview()
-    sleep(2)
-    # Take the picture
-    camera.capture(picture_cache_location + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + "-" + str(latitude) + "-" + str(longitude) + ".png")
-    print("Capture " + picture_cache_location + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + "-" + str(latitude) + "-" + str(longitude) + ".png")
-    logging.info("Capture " + picture_cache_location + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + "-" + str(latitude) + "-" + str(longitude) + ".png")
-    # Close camera instance
-    camera.stop_preview()
+    sleep(2.0)
+    while True:
+        start_time = time.time()
+        try:
+            gps_data = read_gps_data_log()
+            latitude = gps_data["lat"]
+            longitude = gps_data["lon"]
+            # Take the picture
+            camera.annotate_background = picamera.Color('black')
+            text = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + "-lat:" + str(latitude) + "-lon:" + str(longitude)
+            camera.annotate_text = text
+            camera.capture(picture_cache_location + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + "-" + str(latitude) + "-" + str(longitude) + ".png")
+            print("Capture " + picture_cache_location + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + "-" + str(latitude) + "-" + str(longitude) + ".png")
+            logging.info("Capture " + picture_cache_location + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + "-" + str(latitude) + "-" + str(longitude) + ".png")
 
-import logging
-logging.basicConfig(filename='/home/camera/images/script.log', filemode="a", level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+            elapsed_time = 10 - (time.time() - start_time)
+            print(elapsed_time)
+            if elapsed_time > 0.0:
+                print("Sleeps ", elapsed_time)
+                time.sleep(elapsed_time)
+        except KeyboardInterrupt:
+            break
+            # Close camera instance
+        camera.stop_preview()
 
-try:
-    gps_data = read_gps_data_log()
-    take_picture_annotate("/home/camera/images/", 1920, 1080, gps_data["lat"], gps_data["lon"])
-except KeyboardInterrupt:
-    sys.exit()
+logging.basicConfig(
+    filename='/home/camera/images/tripcam' + dt.datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log',
+    filemode="a", level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s', datefmt='%m/$
+take_picture_annotate("/home/camera/images/", 1920, 1080, 0.0, 0.0)
