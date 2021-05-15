@@ -1,4 +1,6 @@
 import setuptools
+import os
+import yaml
 from setuptools.command.install import install
 from setuptools.command.develop import develop
 
@@ -15,7 +17,24 @@ def get_dependencies():
 
 
 def install_configuration():
-    print("Configuring Trip Overview app...")
+    print("Configuring Timelapse Generator app...")
+    path_to_app = "/etc/timelapse_generator"
+    path_to_conf = os.path.join(path_to_app, "/config.yaml")
+    if not os.path.exists(path_to_app):
+        print("Create folder", path_to_app)
+        os.makedirs(path_to_app)
+    if not os.path.exists(path_to_conf):
+        print("Create Trip Overview configuration")
+        configuration = {"root_temp_image_loc": "/tmp/timelapse_generator",
+                         "camera_width": 1280,
+                         "camera_height": 720,
+                         "fpm": 20,
+                         "debug": True}
+        with open(path_to_conf, 'w+') as file:
+            documents = yaml.dump(configuration, file)
+            print("Write ", configuration, " in ", path_to_conf)
+    else:
+        print("Timelapse Generator configuration file already installed")
 
 
 class PostDevelopCommand(develop):
@@ -34,14 +53,14 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="timelapsegeo",
+    name="timelapse_generator",
     version="0.0.0",
     description="Create a timelapse with metadata included",
     long_description_content_type="text/markdown",
     url="https://github.com/Gamma-Software/TimelapseGeolocate",
     entry_points={
         "console_scripts": [
-            "timelapsegeo=src.timelapsegeo:main",
+            "take_pi_picture=src.TakePiPicture",
         ]
     },
     classifiers=[
