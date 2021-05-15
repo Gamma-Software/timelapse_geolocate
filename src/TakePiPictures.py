@@ -105,15 +105,11 @@ images_path = path + "/images"
 log_path = path + "/log"
 access_rights = 0o755
 try:
-    os.mkdir(path, access_rights)
-except OSError:
-    sys.exit("Creation of the directory %s failed" % path)
-try:
-    os.mkdir(images_path, access_rights)
+    os.makedirs(images_path, access_rights)
 except OSError:
     sys.exit("Creation of the directory %s failed" % images_path)
 try:
-    os.mkdir(log_path, access_rights)
+    os.makedirs(log_path, access_rights)
 except OSError:
     sys.exit("Creation of the directory %s failed" % log_path)
 
