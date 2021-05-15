@@ -23,4 +23,5 @@ TODO
 This project is written in python and is meant to be run on a device that supports GPS queries.
 
 ### Integration
+We assume that the script will only be run on Linux OS
 TODO

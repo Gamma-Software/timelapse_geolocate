@@ -1,0 +1,5 @@
+root_temp_image_loc: "/home/camera/"
+camera_width: 1280
+camera_height: 720
+fpm : 12
+debug: True
