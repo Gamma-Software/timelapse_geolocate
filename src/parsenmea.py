@@ -39,6 +39,7 @@ while True:
                             client.publish("gps/fixed", False)
                         else:
                             client.publish("gps/fixed", True)
+                            try
                             if isinstance(last_valid_nmea, pynmea2.types.GGA):
                                 client.publish("gps/timestamp", dt.datetime.now().timestamp())
                                 client.publish("gps/latitude", round(data.latitude, 4))
@@ -50,8 +51,11 @@ while True:
                             last_valid_nmea = nmeaobj
                     logging.debug(repr(nmeaobj))
                 except pynmea2.ParseError as e:
-                    logging.info('Parse error: {}'.format(e))
-                    logging.info("Retry getting a correct NMEA data")
+                    logging.warning('Parse error: {}'.format(e))
+                    logging.warning("Retry getting a correct NMEA data")
+                    pass
+                except AttributeError as e:
+                    logging.warning("Erreur sur attribut {}".format(e))
                     pass
                 except KeyboardInterrupt:
                     logging.info("Stop script")
