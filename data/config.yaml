@@ -3,3 +3,5 @@ camera_width: 1280
 camera_height: 720
 fpm : 12
 debug: True
+gps_serial_port: "/dev/serial0"
+gps_serial_baudrate: 115200

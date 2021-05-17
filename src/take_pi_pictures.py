@@ -1,5 +1,5 @@
 import sys
-from enum import Enum
+from src.enums import TimelapseGeneratorCommand
 from picamera import PiCamera
 import picamera
 from time import sleep
@@ -14,16 +14,10 @@ from paho.mqtt import client as mqtt
 # MQTT methods
 def on_connect(client, userdata, flags, rc):  # The callback for when the client connects to the broker
     logging.info("Connected with result code {0}".format(str(rc)))  # Print result of connection attempt
-    client.subscribe("gps/latitude")  # Subscribe to the topic “digitest/test1”, receive any messages published on it
-    client.subscribe("gps/longitude")  # Subscribe to the topic “digitest/test1”, receive any messages published on it
-    client.subscribe("gps/timestamp")  # Subscribe to the topic “digitest/test1”, receive any messages published on it
-    client.subscribe("tripcam/app/alive")
-
-
-class TimelapseGeneratorCommand(Enum):
-    PAUSE = 0
-    RESUME = 1
-    STOP = 2
+    client.subscribe("gps/latitude")
+    client.subscribe("gps/longitude")
+    client.subscribe("gps/timestamp")
+    client.subscribe("gps/process/status")
 
 
 def on_message(client, userdata, msg):  # The callback for when a PUBLISH message is received from the server.
@@ -35,9 +29,9 @@ def on_message(client, userdata, msg):  # The callback for when a PUBLISH messag
         latitude = float(data)
     if msg.topic == "gps/longitude":
         longitude = float(data)
-    if msg.topic == "tripcam/app/alive":
+    if msg.topic == "gps/process/alive":
         alive = bool(data)
-    if msg.topic == "timelaspe_generator/app/command":
+    if msg.topic == "timelapse_generator/script/command":
         command = TimelapseGeneratorCommand(data)
         # Accept instance of only TimelapseGeneratorCommand
         if isinstance(command, TimelapseGeneratorCommand):
@@ -62,7 +56,7 @@ with open(path_to_conf, "r") as file:
 # Initiate variables
 # ----------------------------------------------------------------------------------------------------------------------
 logging.basicConfig(
-    filename="/var/log/timelapse_generator/take_picture.log",
+    filename="/var/log/timelapse_generator/take_picture_" + dt.datetime.now().strftime("%Y%m%d-%H%M%S") + ".log",
     filemode="a", level=logging.DEBUG if conf.debug else logging.INFO,
     format="%(asctime)s %(levelname)s:%(message)s",
     datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -143,7 +137,7 @@ while state is not TimelapseGeneratorCommand.STOP:
             logging.info("Sleeps by default with 0.1s")
             time.sleep(0.1)
     except KeyboardInterrupt:
-        logging.warning("timelapse_generator app is ended by user")
+        logging.info("timelapse_generator app is ended by user")
         break
 
 logging.info("Script stopped by user")

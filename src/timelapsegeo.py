@@ -14,7 +14,7 @@ import argparse
 import typing
 import cv2
 
-from src.ReadGPSdata import read_gps_data_log
+from src.parse_gps_data import read_gps_data_log
 from src.RaspCameraDriver import take_picture_annotate
 
 """ See the README.md to understand the script
