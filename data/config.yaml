@@ -1,4 +1,4 @@
-root_temp_image_loc: "/home/camera/" # For test purpose, it should be /tmp/timelapse_generator
+root_temp_image_loc: "../data/images/" # For test purpose, it should be /tmp/timelapse_generator
 camera_width: 1280
 camera_height: 720
 fpm : 12
