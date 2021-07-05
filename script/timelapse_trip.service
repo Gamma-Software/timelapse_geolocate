@@ -1,13 +1,12 @@
 [Unit]
-Description=Connect and parse GPS measures and publish on mqtt server
+Description=Take timelapse from the rtsp stream
 Requires=mosquitto.service
 After=mosquitto.service
 Wants=mosquitto.service
 
 [Service]
-ExecStartPre=/bin/sleep 10
-ExecStart=/home/rudloff/sources/CapsuleScripts/devices_driver/gps/.venv/bin/python3 /home/rudloff/sources/CapsuleScripts/devices_driver/gps/gps_measure.py
-Restart=on-failure
- 
+RemainAfterExit=yes
+ExecStart=/home/rudloff/sources/CapsuleScripts/timelapse_geolocate/script/.venv/bin/python3 /home/rudloff/sources/CapsuleScripts/timelapse_geolocate/script/take_rtsp_timelapse.py
+
 [Install]
 WantedBy=multi-user.target
