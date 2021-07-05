@@ -73,10 +73,10 @@ def on_message(client, userdata, msg):  # The callback for when a PUBLISH messag
         command = Motion(data)
         # Accept instance of only TimelapseGeneratorCommand
         if isinstance(command, Motion):
-            logging.info("Change app state from " + repr(state) + " to " + repr(command) + " succeeded")
+            logging.info("Change app state from " + repr(motion_state) + " to " + repr(command) + " succeeded")
             motion_state = command
         else:
-            logging.warning("Change app state from " + repr(state) + " to " + repr(command) + " failed")
+            logging.warning("Change app state from " + repr(motion_state) + " to " + repr(command) + " failed")
 
 def wait_for(client,msgType,period=0.25):
  if msgType=="SUBACK":
