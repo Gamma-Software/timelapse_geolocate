@@ -101,7 +101,8 @@ while not client.is_connected():
 # ----------------------------------------------------------------------------------------------------------------------
 # Main loop
 # ----------------------------------------------------------------------------------------------------------------------
-def stop_script(process):
+def stop_script(process, why):
+    logging.info("Process killed: " + why)
     process.stdin.write("q")
     process.communicate()[0]
     process.stdin.close()
@@ -118,15 +119,13 @@ else:
         while True:
             client.publish("process/timelapse_trip/alive", True)
             if motion_state == Motion.STOP or stop_command:
-                stop_script(process)
+                stop_script(process, "Motion Stop" if motion_state == Motion.STOP else "stop command by user")
                 break
             time.sleep(conf["period_s"])
     except TimeoutExpired as e:
-        logging.warning('Timelapse process as been killed outside of the script: {}'.format(e))
-        stop_script(process)
+        stop_script(process, 'Timelapse process as been killed outside of the script: {}'.format(e))
     except KeyboardInterrupt:
-        logging.warning("Timelapse process as been killed by the user")
-        stop_script(process)
+        stop_script(process, "Timelapse process as been killed by the user")
         pass
 
 
