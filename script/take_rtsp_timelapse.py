@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 import os
-import subprocess
 import yaml
 import sys
 import time
 import logging
 import datetime as dt
 import paho.mqtt.client as mqtt
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, TimeoutExpired
 from enum import Enum
 
 class TimelapseGeneratorCommand(Enum):
@@ -45,14 +44,14 @@ logging.basicConfig(
 # ----------------------------------------------------------------------------------------------------------------------
 # Initiate MQTT variables
 # ----------------------------------------------------------------------------------------------------------------------
-motion_state = Motion.STOP # By default
+motion_state = Motion.IDLE # By default
 stop_command = False
 # MQTT methods
 def on_connect(client, userdata, flags, rc):  # The callback for when the client connects to the broker
     logging.info("Connected with result code {0}".format(str(rc)))  # Print result of connection attempt
     
     for topic in ["capsule/motion_state", "timelapse_trip/stop_command"]:
-        r=client.subscribe("capsule/motion_state")
+        r=client.subscribe(topic)
         tries = 10
         while r[0]!=0:
             logging.info("Waiting to subscribe to " + topic + " / Will exit the process after " + tries + " tries")
@@ -70,7 +69,7 @@ def on_message(client, userdata, msg):  # The callback for when a PUBLISH messag
     if msg.topic == "timelapse_trip/stop_command":
         stop_command = bool(data)
     if msg.topic == "capsule/motion_state":
-        command = Motion(data)
+        command = Motion[data]
         # Accept instance of only TimelapseGeneratorCommand
         if isinstance(command, Motion):
             logging.info("Change app state from " + repr(motion_state) + " to " + repr(command) + " succeeded")
@@ -102,33 +101,35 @@ while not client.is_connected():
 # ----------------------------------------------------------------------------------------------------------------------
 # Main loop
 # ----------------------------------------------------------------------------------------------------------------------
-args = ["ffmpeg", "-rtsp_transport tcp", "-y", "-i", 
-conf["rtsp"]["stream_name"], "-q:v 4",
-"-vf", "fps="+str(conf["rtsp"]["framerate"]), "-strftime 1", "-strftime_mkdir 1", '"%Y%m%d/%Y-%m-%d_%H-%M-%S.jpg"']
-try:
-    if motion_state == Motion.STOP or stop_command:
-        logging.warning("The Timelapse will not start because of the vehicle is Stopped or the user asks to stop the timelapse")
-        process = Popen(args, stdin=PIPE, stderr=PIPE, shell=True, encoding='utf8')
-        try:
-            logging.info("Start timelapse")
-            while motion_state != Motion.STOP and not stop_command:
-                client.publish("process/timelapse_trip/alive", True)
-                stdout, stderr = process.communicate()
-                if stdout:
-                    logging.info(stdout)
-                if stderr:
-                    logging.error(stderr)
-                time.sleep(conf["period_s"])
-        except subprocess.TimeoutExpired as e:
-            logging.warning('Timelapse process as been killed outside of the script: {}'.format(e))
-            pass
-except KeyboardInterrupt:
-    pass
+def stop_script(process):
+    process.stdin.write("q")
+    process.communicate()[0]
+    process.stdin.close()
+    logging.info("Wait 5 seconds for the subprocess to be correctly killed")
+    time.sleep(5)
 
-# Stop the timelapse
-process.communicate(input='q')
-logging.info("Wait 5 seconds for the subprocess to be correctly killed")
-time.sleep(5)
+if motion_state == Motion.STOP or stop_command:
+    logging.warning("The Timelapse will not start because of the vehicle is Stopped or the user asks to stop the timelapse")
+else:
+    args = ["/home/rudloff/sources/CapsuleScripts/timelapse_geolocate/script/ffmpeg_timelapse_thread.sh", str(conf["rtsp"]["framerate"])]
+    process = Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, encoding='utf8')
+    try:
+        logging.info("Start timelapse")
+        while True:
+            client.publish("process/timelapse_trip/alive", True)
+            if motion_state == Motion.STOP or stop_command:
+                stop_script(process)
+                break
+            time.sleep(conf["period_s"])
+    except TimeoutExpired as e:
+        logging.warning('Timelapse process as been killed outside of the script: {}'.format(e))
+        stop_script(process)
+    except KeyboardInterrupt:
+        logging.warning("Timelapse process as been killed by the user")
+        stop_script(process)
+        pass
+
+
 
 logging.info("Stop script")
 client.publish("process/timelapse_trip/alive", False)
