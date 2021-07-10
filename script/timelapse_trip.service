@@ -5,8 +5,9 @@ After=mosquitto.service
 Wants=mosquitto.service
 
 [Service]
-RemainAfterExit=yes
-ExecStart=/home/rudloff/sources/CapsuleScripts/timelapse_geolocate/script/.venv/bin/python3 /home/rudloff/sources/CapsuleScripts/timelapse_geolocate/script/take_rtsp_timelapse.py
+ExecStartPre=/bin/sleep 10
+ExecStart=/home/rudloff/sources/CapsuleScripts/timelapse_geolocate/script/.venv/bin/python3 /home/rudloff/sources/CapsuleScripts/timelapse_geolocate/script/timelapse_trip.py
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
