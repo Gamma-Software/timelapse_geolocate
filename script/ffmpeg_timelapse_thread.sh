@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # Create the folder
-PICS_FOLDER=$(pwd)
-FOLDER=$(date +"%Y%m%d_%H%M%S")
+PICS_FOLDER="/tmp/timelapse_trip/"
+FOLDER=$(date +"%Y-%m-%d_%H-%M-%S")
 mkdir -p $PICS_FOLDER/$FOLDER
 cd $PICS_FOLDER/$FOLDER
 
