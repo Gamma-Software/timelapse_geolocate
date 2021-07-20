@@ -3,8 +3,6 @@ import pandas as pd
 from datetime import datetime, timezone, timedelta
 
 
-client = DataFrameClient("localhost", "8086", "rudloff", "y4uv3jpc", "telegraf")
-
 def generate_timelapse():
     print("test")
 
@@ -20,10 +18,13 @@ for timelapse_to_process in os.listdir(initdir):
         print(images_sorted)
         break
 
+
+
 start = (datetime.strptime(images_sorted[0].strip(".jpg"), '%Y-%m-%d_%H-%M-%S') + timedelta(seconds=-5)).isoformat()
 end = (datetime.strptime(images_sorted[-1].strip(".jpg"), '%Y-%m-%d_%H-%M-%S') + timedelta(seconds=5)).isoformat()
 client = DataFrameClient("localhost", "8086", "rudloff", "y4uv3jpc", "telegraf")
 result = client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\" = '/gps_measure/latitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
+# TODO handle if the result is empty (result.empty) i.e. the vehicle was not localized
 result["mqtt_consumer"].drop(["host", "topic"], axis=1, inplace=True)
 result["mqtt_consumer"] = result["mqtt_consumer"].resample('1S').first()
 gps_coords = result["mqtt_consumer"].copy()
@@ -33,6 +34,7 @@ result["mqtt_consumer"].drop(["host", "topic"], axis=1, inplace=True)
 result["mqtt_consumer"] = result["mqtt_consumer"].resample('1S').first()
 gps_coords["longitude"] = result["mqtt_consumer"]["value"]
 gps_coords = gps_coords.fillna(method="ffill")
+
 
 # Create the list of timestamp to generate the map
 timestamps_to_maps = [datetime.strptime(images_name.strip(".jpg"), '%Y-%m-%d_%H-%M-%S').isoformat() for images_name in images_sorted]
@@ -64,7 +66,6 @@ def show_map(lat, lon, id):
 
     import cartopy.io.img_tiles as cimgt
 
-
     cimgt.OSM.get_image = image_spoof  # reformat web request for street map spoofing
     osm_img = cimgt.GoogleTiles()  # spoofed, downloaded street map
     #osm_img = cimgt.QuadtreeTiles()  # spoofed, downloaded street map
@@ -72,10 +73,10 @@ def show_map(lat, lon, id):
     fig = plt.figure(figsize=(5,5), frameon=False)
     ax1 = plt.axes(projection=osm_img.crs)
     center_pt = [lat[-1], lon[-1]]  # lat/lon of One World Trade Center in NYC
-    zoom = 100  # for zooming out of center point
+    zoom = 10  # for zooming out of center point
     print(center_pt)
-    extent = [center_pt[1] - (zoom * 1.5), center_pt[1] + (zoom * 1.5), center_pt[0] - zoom,
-              center_pt[0] + zoom]  # adjust to zoom
+    extent = [(center_pt[1] - (zoom))*3.141592653589793/180, (center_pt[1] + (zoom))*3.141592653589793/180, (center_pt[0] - zoom)*1.4844222297453324/90,
+              (center_pt[0] + zoom)*1.4844222297453324/90]  # adjust to zoom
     print(extent)
     #ax1.set_extent(extent, crs=osm_img.crs)  # set extents
 
@@ -105,6 +106,6 @@ def show_map(lat, lon, id):
 lat_list = []
 lon_list = []
 for lat, lon in zip(gps_coords["latitude"].tolist(), gps_coords["longitude"].tolist()) :
-    lat_list.append(lat)
-    lon_list.append(lon)
+    lat_list.append(lon)
+    lon_list.append(lat)
     show_map(lat_list, lon_list, len(lat_list)-1)
