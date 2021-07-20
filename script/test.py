@@ -19,7 +19,6 @@ for timelapse_to_process in os.listdir(initdir):
         break
 
 
-
 start = (datetime.strptime(images_sorted[0].strip(".jpg"), '%Y-%m-%d_%H-%M-%S') + timedelta(seconds=-5)).isoformat()
 end = (datetime.strptime(images_sorted[-1].strip(".jpg"), '%Y-%m-%d_%H-%M-%S') + timedelta(seconds=5)).isoformat()
 client = DataFrameClient("localhost", "8086", "rudloff", "y4uv3jpc", "telegraf")
@@ -70,7 +69,55 @@ def show_map(lat, lon, id):
 
 lat_list = []
 lon_list = []
-for lat, lon in zip(gps_coords["latitude"].tolist(), gps_coords["longitude"].tolist()) :
+for lat, lon, timestamp in zip(gps_coords["latitude"].tolist(), gps_coords["longitude"].tolist(), gps_coords.index) :
     lat_list.append(lat)
     lon_list.append(lon)
-    show_map(lat_list, lon_list, len(lat_list)-1)
+    show_map(lat_list, lon_list, datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S'))
+
+import cv2
+import numpy as np
+#from matplotlib import pyplot as plt
+from datetime import datetime
+from os import walk
+
+
+def combine(map_path, frame_path, id, video_out):
+    x_offset = y_offset = 20
+    map_image = cv2.imread(map_path)
+    scale_percent = 80
+    width = int(map_image.shape[1] * scale_percent / 100)
+    height = int(map_image.shape[0] * scale_percent / 100)
+    dsize = (width, height)
+    map_image = cv2.resize(map_image, dsize)
+
+    frame = cv2.imread(frame_path)
+    mask = np.zeros(frame.shape[:2], dtype="uint8")
+    cv2.circle(mask, (frame.shape[1] - int(map_image.shape[0]/2) - x_offset,
+                      frame.shape[0] - int(map_image.shape[1]/2) - y_offset),
+               int(map_image.shape[0]/2), 255, -1)
+    mask_inv = cv2.bitwise_not(mask)
+    frame_masked = cv2.bitwise_and(frame, frame, mask=mask_inv)
+
+    frame[frame.shape[0] - map_image.shape[0] - y_offset*2 : frame.shape[0] - y_offset*2,
+          frame.shape[1] - map_image.shape[1] - x_offset : frame.shape[1] - x_offset] = map_image
+    map_masked = cv2.bitwise_and(frame, frame, mask=mask)
+    dst = cv2.add(frame_masked, map_masked)
+    frame[0:frame.shape[0], 0:frame.shape[1]] = dst
+
+    date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    lat = 10
+    lon = 15
+    localisation = " lat: " + str(lat) + ", " + "lon :" + str(lon)
+    text = date + ", " + localisation
+    cv2.putText(frame,text,(10,30), cv2.FONT_HERSHEY_DUPLEX, 1,(0,0,0),2,cv2.LINE_AA)
+    cv2.imwrite("result/"+str(id)+".png", frame)
+
+    video_out.write(frame)
+
+frameSize = (2304, 1296)
+video_out = cv2.VideoWriter('result/output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, frameSize)
+
+for timestamp in images_sorted:
+    combine("map/"+timestamp.strip(".jpg")+".png", os.path.join(initdir, timelapse_to_process, timestamp), timestamp.strip(".jpg"), video_out)
+
+video_out.release()
