@@ -45,60 +45,25 @@ gps_coords = gps_coords.loc[mask]
 
 
 import matplotlib.pyplot as plt
-import numpy as np
-import cartopy.crs as ccrs
-import cartopy.io.img_tiles as cimgt
-import io
-from urllib.request import urlopen, Request
-from PIL import Image
+import tilemapbase
+
+t = tilemapbase.tiles.build_OSM()
 
 def show_map(lat, lon, id):
-    def image_spoof(self, tile):  # this function pretends not to be a Python script
-        url = self._image_url(tile)  # get the url of the street map API
-        req = Request(url)  # start request
-        req.add_header('User-agent', 'Anaconda 3')  # add user agent to request
-        fh = urlopen(req)
-        im_data = io.BytesIO(fh.read())  # get image
-        fh.close()  # close url
-        img = Image.open(im_data)  # open image with PIL
-        img = img.convert(self.desired_tile_form)  # set image format
-        return img, self.tileextent(tile), 'lower'  # reformat for cartopy
+    degree_range = 0.003
+    extent = tilemapbase.Extent.from_lonlat(lon[-1] - degree_range, lon[-1] + degree_range,
+                    lat[-1] - degree_range, lat[-1] + degree_range)
+    extent = extent.to_aspect(1.0)
+    fig, ax = plt.subplots(figsize=(8, 8), dpi=100) 
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+    plotter = tilemapbase.Plotter(extent, t, width=600)
+    plotter.plot(ax, t)
 
-    import cartopy.io.img_tiles as cimgt
-
-    cimgt.OSM.get_image = image_spoof  # reformat web request for street map spoofing
-    osm_img = cimgt.GoogleTiles()  # spoofed, downloaded street map
-    #osm_img = cimgt.QuadtreeTiles()  # spoofed, downloaded street map
-
-    fig = plt.figure(figsize=(5,5), frameon=False)
-    ax1 = plt.axes(projection=osm_img.crs)
-    center_pt = [lat[-1], lon[-1]]  # lat/lon of One World Trade Center in NYC
-    zoom = 10  # for zooming out of center point
-    print(center_pt)
-    extent = [(center_pt[1] - (zoom))*3.141592653589793/180, (center_pt[1] + (zoom))*3.141592653589793/180, (center_pt[0] - zoom)*1.4844222297453324/90,
-              (center_pt[0] + zoom)*1.4844222297453324/90]  # adjust to zoom
-    print(extent)
-    #ax1.set_extent(extent, crs=osm_img.crs)  # set extents
-
-    scale = np.ceil(-np.sqrt(2) * np.log(np.divide(zoom, 350.0)))  # empirical solve for scale based on zoom
-    scale = (scale < 20) and scale or 19  # scale cannot be larger than 19
-    ax1.add_image(osm_img, int(scale))  # add OSM with zoom specification
-    ax1.set_axis_off()
-    fig.add_axes(ax1)
-    # NOTE: zoom specifications should be selected based on extent:
-    # -- 2     = coarse image, select for worldwide or continental scales
-    # -- 4-6   = medium coarseness, select for countries and larger states
-    # -- 6-10  = medium fineness, select for smaller states, regions, and cities
-    # -- 10-12 = fine image, select for city boundaries and zip codes
-    # -- 14+   = extremely fine image, select for roads, blocks, buildings
-    plt.plot(lon, lat, color='red', linewidth=2, alpha=0.5,
-             transform=ccrs.Geodetic(),
-             )
-    plt.plot(lon[-1], lat[-1],
-             color='blue', markersize=10, marker='o',
-             transform=ccrs.Geodetic(),
-             )
-    plt.savefig("map/"+str(id)+".png",bbox_inches='tight', pad_inches=0)
+    x, y = tilemapbase.project(*[lon[-1], lat[-1]])
+    ax.scatter(x,y, marker=".", color="black", linewidth=20)
+    plt.savefig("map/"+str(id)+".png",bbox_inches='tight', dpi=200, pad_inches=0)
+    print("saved map ", id)
     #plt.show()
     plt.close()
 
@@ -106,6 +71,6 @@ def show_map(lat, lon, id):
 lat_list = []
 lon_list = []
 for lat, lon in zip(gps_coords["latitude"].tolist(), gps_coords["longitude"].tolist()) :
-    lat_list.append(lon)
-    lon_list.append(lat)
+    lat_list.append(lat)
+    lon_list.append(lon)
     show_map(lat_list, lon_list, len(lat_list)-1)
