@@ -46,7 +46,8 @@ gps_coords = gps_coords.loc[mask]
 import matplotlib.pyplot as plt
 import tilemapbase
 
-t = tilemapbase.tiles.build_OSM()
+#t = tilemapbase.tiles.build_OSM()
+t = tilemapbase.tiles.Tiles("http://localhost:8000/osm/{zoom}/{x}/{y}.png", "OSM", headers={"User-Agent":"TileMapBase"})
 
 def show_map(lat, lon, id):
     degree_range = 0.003
@@ -66,6 +67,9 @@ def show_map(lat, lon, id):
     #plt.show()
     plt.close()
 
+
+show_map([0], [0], "2021-07-20_17-40-40")
+exit(0)
 
 lat_list = []
 lon_list = []
