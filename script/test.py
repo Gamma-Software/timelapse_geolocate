@@ -2,6 +2,13 @@ from influxdb import InfluxDBClient, DataFrameClient
 import influxdb
 import pandas as pd
 from datetime import datetime, timezone, timedelta
+import matplotlib.pyplot as plt
+import tilemapbase
+import cv2
+import numpy as np
+#from matplotlib import pyplot as plt
+from datetime import datetime
+from os import walk
 
 
 def generate_timelapse():
@@ -55,51 +62,43 @@ def retrieve_lat_lon(timestamps, influxdb_client):
 timestamps = [datetime.strptime(timestamp_dirty.strip(".jpg"), '%Y-%m-%d_%H-%M-%S').isoformat() for timestamp_dirty in images_sorted]
 client = DataFrameClient("localhost", "8086", "rudloff", "y4uv3jpc", "telegraf")
 #client =  DataFrameClient(conf["influxdb"]["url"], conf["influxdb"]["port"], conf["influxdb"]["name"], conf["influxdb"]["pass"], conf["influxdb"]["database"])
-retrieve_lat_lon(timestamps, client)
+gps_coords = retrieve_lat_lon(timestamps, client)
 
 
-
-
-import matplotlib.pyplot as plt
-import tilemapbase
-
-#t = tilemapbase.tiles.build_OSM()
-t = tilemapbase.tiles.Tiles("http://localhost:8000/osm/{zoom}/{x}/{y}.png", "OSM", headers={"User-Agent":"TileMapBase"})
-
-def show_map(lat, lon, id):
+def retrieve_save_map(lat, lon, tiles, timestamp, save_folder):
+    """
+    retrieve_save_map(gps_coords, tiles, save_folder)
+    Retrieve and save the map corresponding on the lat lon coordinates
+    gps_coords: gps coordinates
+    tiles: tilemapbase instance
+    timestamp: timestamp correspond to gps_coords
+    save_folder: folder name to save the map to
+    """
     degree_range = 0.003
-    extent = tilemapbase.Extent.from_lonlat(lon[-1] - degree_range, lon[-1] + degree_range,
-                    lat[-1] - degree_range, lat[-1] + degree_range)
+    extent = tilemapbase.Extent.from_lonlat(
+        lon[-1] - degree_range, lon[-1] + degree_range, lat[-1] - degree_range, lat[-1] + degree_range)
     extent = extent.to_aspect(1.0)
     fig, ax = plt.subplots(figsize=(8, 8), dpi=100) 
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
-    plotter = tilemapbase.Plotter(extent, t, width=600)
-    plotter.plot(ax, t)
-
-    x, y = tilemapbase.project(*[lon[-1], lat[-1]])
+    plotter = tilemapbase.Plotter(extent, tiles, width=600)
+    plotter.plot(ax, tiles)
+    # TODO simplify database usage
+    x, y = tilemapbase.project(*[gps_coords["longitude"][-1], gps_coords["latitude"][-1]])
     ax.scatter(x,y, marker=".", color="black", linewidth=20)
-    plt.savefig("map/"+str(id)+".png",bbox_inches='tight', dpi=200, pad_inches=0)
-    print("saved map ", id)
-    #plt.show()
+    plt.savefig(save_folder+timestamp+".png",bbox_inches='tight', dpi=200, pad_inches=0)
     plt.close()
 
-
-show_map([0], [0], "2021-07-20_17-40-40")
-exit(0)
-
+#t = tilemapbase.tiles.build_OSM()
+t = tilemapbase.tiles.Tiles("http://localhost:8000/osm/{zoom}/{x}/{y}.png", "OSM", headers={"User-Agent":"TileMapBase"})
 lat_list = []
 lon_list = []
 for lat, lon, timestamp in zip(gps_coords["latitude"].tolist(), gps_coords["longitude"].tolist(), gps_coords.index) :
     lat_list.append(lat)
     lon_list.append(lon)
-    show_map(lat_list, lon_list, datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S'))
+    retrieve_save_map(lat_list, lon_list, t, datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S'), "map/")
 
-import cv2
-import numpy as np
-#from matplotlib import pyplot as plt
-from datetime import datetime
-from os import walk
+
 
 
 def combine(map_path, frame_path, id, video_out):
