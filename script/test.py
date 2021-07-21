@@ -1,4 +1,5 @@
 from influxdb import InfluxDBClient, DataFrameClient
+import influxdb
 import pandas as pd
 from datetime import datetime, timezone, timedelta
 
@@ -18,22 +19,42 @@ for timelapse_to_process in os.listdir(initdir):
         print(images_sorted)
         break
 
+def retrieve_lat_lon(timestamps, margin, influxdb_client):
+    """
+    retrieve_lat_lon(timestamps, margin, influxdb_client)->DataFrame
+    timestamps: This is a list of the timestamps to retrieve the latlon positions
+    margin: time margin before start and after end of the timestamp bound 
+    influxdb_client: influxbd client to connect to
+    return a Pandas DataFrame; warn: it can be empty if no latlon is found
+    """
+    start = (timestamps[0] + timedelta(seconds=-margin)).isoformat()
+    end = (timestamps[-1] + timedelta(seconds=margin)).isoformat()
+    
+    # Query the lat and lon values inside of the first and last + margin timestamps
+    latitude = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
+         = '/gps_measure/latitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
+    longitude = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
+         = '/gps_measure/longitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
+    # Check the values
+    if latitude.empty or longitude.empty:
+        return pd.DataFrame()
+    # Clean, resample 1s just to be sure, add the values to one specific DataFrame
+    latitude["mqtt_consumer"].drop(["host", "topic"], axis=1)
+    longitude["mqtt_consumer"].drop(["host", "topic"], axis=1)
+    latitude["mqtt_consumer"] = latitude["mqtt_consumer"].resample('1S').first()
+    longitude["mqtt_consumer"] = longitude["mqtt_consumer"].resample('1S').first()
+    gps_coords = latitude["mqtt_consumer"].copy()
+    gps_coords["longitude"] = longitude["mqtt_consumer"]["value"]
+    gps_coords.columns = ["latitude"]
+    # Fill NaN cells
+    gps_coords = gps_coords.fillna(method="ffill")
 
-start = (datetime.strptime(images_sorted[0].strip(".jpg"), '%Y-%m-%d_%H-%M-%S') + timedelta(seconds=-5)).isoformat()
-end = (datetime.strptime(images_sorted[-1].strip(".jpg"), '%Y-%m-%d_%H-%M-%S') + timedelta(seconds=5)).isoformat()
+timestamps = [datetime.strptime(timestamp_dirty.strip(".jpg"), '%Y-%m-%d_%H-%M-%S').isoformat() for timestamp_dirty in images_sorted]
 client = DataFrameClient("localhost", "8086", "rudloff", "y4uv3jpc", "telegraf")
-result = client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\" = '/gps_measure/latitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
-# TODO handle if the result is empty (result.empty) i.e. the vehicle was not localized
-result["mqtt_consumer"].drop(["host", "topic"], axis=1, inplace=True)
-result["mqtt_consumer"] = result["mqtt_consumer"].resample('1S').first()
-gps_coords = result["mqtt_consumer"].copy()
-gps_coords.columns = ["latitude"]
-result = client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\" = '/gps_measure/longitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
-result["mqtt_consumer"].drop(["host", "topic"], axis=1, inplace=True)
-result["mqtt_consumer"] = result["mqtt_consumer"].resample('1S').first()
-gps_coords["longitude"] = result["mqtt_consumer"]["value"]
-gps_coords = gps_coords.fillna(method="ffill")
-
+#client =  DataFrameClient(conf["influxdb"]["url"], conf["influxdb"]["port"], conf["influxdb"]["name"], conf["influxdb"]["pass"], conf["influxdb"]["database"])
+margin = 5
+#margin = conf["timestamp_margin"]
+retrieve_lat_lon(timestamps, margin, client)
 
 # Create the list of timestamp to generate the map
 timestamps_to_maps = [datetime.strptime(images_name.strip(".jpg"), '%Y-%m-%d_%H-%M-%S').isoformat() for images_name in images_sorted]
