@@ -39,14 +39,14 @@ def retrieve_lat_lon(timestamps, influxdb_client):
     gps_coords = gps_coords.loc[mask]
     return gps_coords
 
-def retrieve_save_map(lat, lon, tiles, timestamp, save_folder):
+def retrieve_save_map(lat, lon, tiles, output_title, output_path):
     """
     retrieve_save_map(gps_coords, tiles, save_folder)
     Retrieve and save the map corresponding on the lat lon coordinates
     gps_coords: gps coordinates
     tiles: tilemapbase instance
-    timestamp: timestamp correspond to gps_coords
-    save_folder: folder name to save the map to
+    output_title: output title
+    output_path: folder name to save the map to
     """
     degree_range = 0.003
     extent = tilemapbase.Extent.from_lonlat(
@@ -60,20 +60,33 @@ def retrieve_save_map(lat, lon, tiles, timestamp, save_folder):
     # TODO simplify database usage
     x, y = tilemapbase.project(*[lon[-1], lat[-1]])
     ax.scatter(x,y, marker=".", color="black", linewidth=20)
-    plt.savefig(save_folder+timestamp+".png",bbox_inches='tight', dpi=200, pad_inches=0)
+    plt.savefig(output_path+output_title+".png",bbox_inches='tight', dpi=200, pad_inches=0)
     plt.close()
 
-def combine(map_path, frame_path, id, video_out):
-    # TODO
-    x_offset = y_offset = 20
+def combine(map_path, frame_path, timestamp, latitude, longitude, output_title, output_path):
+    """
+    combine(map_path, frame_path, video_path)
+    Combine the timelapse frame and the map to display
+    map_path: folder path to the map
+    timestamp: timestamp
+    latitude: latitude
+    longitude: longitude
+    frame_path: folder path to the timelapse frame
+    output_path: folder path to save the combine frame
+    """
+    # Read images
     map_image = cv2.imread(map_path)
+    frame = cv2.imread(frame_path)
+
+    # Resize the map images
+    x_offset = y_offset = 20
     scale_percent = 80
     width = int(map_image.shape[1] * scale_percent / 100)
     height = int(map_image.shape[0] * scale_percent / 100)
     dsize = (width, height)
     map_image = cv2.resize(map_image, dsize)
 
-    frame = cv2.imread(frame_path)
+    # Create a circle mask
     mask = np.zeros(frame.shape[:2], dtype="uint8")
     cv2.circle(mask, (frame.shape[1] - int(map_image.shape[0]/2) - x_offset,
                       frame.shape[0] - int(map_image.shape[1]/2) - y_offset),
@@ -81,17 +94,17 @@ def combine(map_path, frame_path, id, video_out):
     mask_inv = cv2.bitwise_not(mask)
     frame_masked = cv2.bitwise_and(frame, frame, mask=mask_inv)
 
+    # Incrust the map mask onto the frame
     frame[frame.shape[0] - map_image.shape[0] - y_offset*2 : frame.shape[0] - y_offset*2,
           frame.shape[1] - map_image.shape[1] - x_offset : frame.shape[1] - x_offset] = map_image
     map_masked = cv2.bitwise_and(frame, frame, mask=mask)
     dst = cv2.add(frame_masked, map_masked)
     frame[0:frame.shape[0], 0:frame.shape[1]] = dst
-
-    date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    lat = 10
-    lon = 15
-    localisation = " lat: " + str(lat) + ", " + "lon :" + str(lon)
-    text = date + ", " + localisation
-    cv2.putText(frame,text,(10,30), cv2.FONT_HERSHEY_DUPLEX, 1,(0,0,0),2,cv2.LINE_AA)
-    cv2.imwrite("result/"+str(id)+".png", frame)
-    video_out.write(frame)
+    
+    # Diplay metadata
+    date = datetime.strftime(timestamp, "%m/%d/%Y, %H:%M:%S")
+    localisation = " lat: " + str(round(latitude, 1)) + ", " + "lon :" + str(round(longitude, 1))
+    cv2.putText(frame,date + ", " + localisation,(10,30), cv2.FONT_HERSHEY_DUPLEX, 1,(0,0,0),2,cv2.LINE_AA)
+    
+    # Save frame
+    cv2.imwrite(output_path+output_title+".png", frame)
