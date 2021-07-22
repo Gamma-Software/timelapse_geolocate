@@ -1,14 +1,39 @@
+from typing import List
 import pandas as pd
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
+from pandas.core.frame import DataFrame
 import tilemapbase
 import cv2
 import numpy as np
+import os
 
 
-def retrieve_lat_lon(timestamps, influxdb_client):
+def get_timelapse_to_process(timelapse_tmp_path)->List:
     """
-    retrieve_lat_lon(timestamps, margin, influxdb_client)->DataFrame
+    Get the list of timelapse folders to process if they are not empty
+    timelapse_tmp_path: initial temporary folder
+    """
+    return_list = []
+    for timelapse_to_process in os.listdir(timelapse_tmp_path):
+        path = os.path.join(timelapse_tmp_path, timelapse_to_process)
+        if len(os.listdir(path)) != 0:
+            return_list.append(path)
+    return return_list
+
+def clear_timelapse_to_process(timelapse_tmp_path, timelapse_generated_path):
+    """
+    Clean the timelapse temporary folders if the timelapse is generated or if the temporary folder is empty
+    timelapse_tmp_path: initial temporary folder
+    """
+    for timelapse_to_process in os.listdir(timelapse_tmp_path):
+        path = os.path.join(timelapse_tmp_path, timelapse_to_process)
+        if len(os.listdir(path)) == 0 or timelapse_to_process in os.listdir(timelapse_generated_path):
+            os.rmdir(path)
+
+
+def retrieve_lat_lon(timestamps, influxdb_client) -> pd.DataFrame():
+    """
     timestamps: This is a list of the timestamps to retrieve the latlon positions
     influxdb_client: influxbd client to connect to
     return a Pandas DataFrame; warn: it can be empty if no latlon is found
@@ -41,7 +66,6 @@ def retrieve_lat_lon(timestamps, influxdb_client):
 
 def retrieve_save_map(lat, lon, tiles, output_title, output_path):
     """
-    retrieve_save_map(gps_coords, tiles, save_folder)
     Retrieve and save the map corresponding on the lat lon coordinates
     gps_coords: gps coordinates
     tiles: tilemapbase instance
@@ -65,7 +89,6 @@ def retrieve_save_map(lat, lon, tiles, output_title, output_path):
 
 def combine(map_path, frame_path, timestamp, latitude, longitude, output_title, output_path):
     """
-    combine(map_path, frame_path, video_path)
     Combine the timelapse frame and the map to display
     map_path: folder path to the map
     timestamp: timestamp
