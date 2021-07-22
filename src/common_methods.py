@@ -1,12 +1,11 @@
-from typing import List
-import pandas as pd
+import os
 from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
-from pandas.core.frame import DataFrame
-import tilemapbase
+from typing import List
 import cv2
 import numpy as np
-import os
+import pandas as pd
+import tilemapbase
+import matplotlib.pyplot as plt
 
 
 def get_timelapse_to_process(timelapse_tmp_path)->List:
