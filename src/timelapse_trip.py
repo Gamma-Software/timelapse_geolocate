@@ -7,17 +7,9 @@ import logging
 import datetime as dt
 import paho.mqtt.client as mqtt
 from subprocess import Popen, PIPE, TimeoutExpired
-from enum import Enum
+from enums import *
+from common_methods import *
 
-class TimelapseGeneratorCommand(Enum):
-    PAUSE = 0
-    RESUME = 1
-    STOP = 2
-
-class Motion(Enum):
-    STOP = 0
-    IDLE = 1 # Car is started but still not moving
-    DRIVE = 2
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Read script parameters
@@ -113,12 +105,6 @@ def stop_script(process, why):
     process.stdin.close()
     logging.info("Wait 5 seconds for the subprocess to be correctly killed")
     time.sleep(5)
-
-def check_timelapse_to_process():
-    return False
-
-def generate_timelapse():
-    print("test")
     
 try:
     while True:
@@ -140,10 +126,12 @@ try:
             except KeyboardInterrupt:
                 stop_script(process, "Timelapse process as been killed by the user")
                 pass
-        if check_timelapse_to_process():
-            # Compose the timelapse
-            print("test")
+        timelapse_to_process = get_timelapse_to_process()
+        if timelapse_to_process: # If the list is empty
             client.publish("process/timelapse_trip/status", "Generate timelapse")
+            
+            
+
         time.sleep(1)
 except KeyboardInterrupt:
     stop_script(process, "Timelapse process as been killed by the user")

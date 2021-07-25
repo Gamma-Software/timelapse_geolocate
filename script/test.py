@@ -99,8 +99,6 @@ for lat, lon, timestamp in zip(gps_coords["latitude"].tolist(), gps_coords["long
     retrieve_save_map(lat_list, lon_list, t, datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S'), "map/")
 
 
-
-
 def combine(map_path, frame_path, id, video_out):
     x_offset = y_offset = 20
     map_image = cv2.imread(map_path)
