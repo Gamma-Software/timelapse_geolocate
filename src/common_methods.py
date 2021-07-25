@@ -86,7 +86,7 @@ def retrieve_save_map(lat, lon, tiles, output_title, output_path):
     plt.savefig(output_path+output_title+".png",bbox_inches='tight', dpi=200, pad_inches=0)
     plt.close()
 
-def combine(map_path, frame_path, timestamp, latitude, longitude, output_title, output_path):
+def combine(map_path, frame_path, timestamp, latitude, longitude):
     """
     Combine the timelapse frame and the map to display
     map_path: folder path to the map
@@ -94,7 +94,6 @@ def combine(map_path, frame_path, timestamp, latitude, longitude, output_title, 
     latitude: latitude
     longitude: longitude
     frame_path: folder path to the timelapse frame
-    output_path: folder path to save the combine frame
     """
     # Read images
     map_image = cv2.imread(map_path)
@@ -129,4 +128,4 @@ def combine(map_path, frame_path, timestamp, latitude, longitude, output_title, 
     cv2.putText(frame,date + ", " + localisation,(10,30), cv2.FONT_HERSHEY_DUPLEX, 1,(0,0,0),2,cv2.LINE_AA)
     
     # Save frame
-    cv2.imwrite(output_path+output_title+".png", frame)
+    return frame
