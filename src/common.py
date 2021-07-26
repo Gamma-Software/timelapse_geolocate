@@ -1,12 +1,12 @@
 import os
-from datetime import datetime, timedelta
-from typing import List
-import cv2
 import numpy as np
 import pandas as pd
+from datetime import datetime, timedelta
+from influxdb import DataFrameClient
+from typing import List
+import cv2
 import tilemapbase
 import matplotlib.pyplot as plt
-import path_files
 
 
 def get_timelapse_to_process(timelapse_tmp_path)->List:
@@ -31,15 +31,15 @@ def clear_timelapse_to_process(timelapse_tmp_path, timelapse_generated_path):
         if len(os.listdir(path)) == 0 or timelapse_to_process in os.listdir(timelapse_generated_path):
             os.rmdir(path)
 
-
-def retrieve_lat_lon(timestamps, influxdb_client) -> pd.DataFrame():
+def retrieve_lat_lon(timestamps: List[datetime],  influxdb_client: DataFrameClient) -> pd.DataFrame():
     """
-    timestamps: This is a list of the timestamps to retrieve the latlon positions
+    timestamps: This is a list of the timestamps to retrieve the latlon positions in the iso format
     influxdb_client: influxbd client to connect to
     return a Pandas DataFrame; warn: it can be empty if no latlon is found
     """
-    start = (timestamps[0] + timedelta(seconds=-5)).isoformat()
-    end = (timestamps[-1] + timedelta(seconds=5)).isoformat()
+    
+    start = (datetime.fromisoformat(timestamps[0]) + timedelta(seconds=-5)).isoformat()
+    end = (datetime.fromisoformat(timestamps[0]) + timedelta(seconds=5)).isoformat()
     
     # Query the lat and lon values inside of the first and last + margin timestamps
     latitude = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
