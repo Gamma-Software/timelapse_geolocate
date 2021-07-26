@@ -1,6 +1,3 @@
-opencv-python ~= 4.5
-matplotlib ~= 3.4
-cartopy
-picamera
-pynmea2
-pyserial
+opencv-python
+matplotlib
+paho-mqtt

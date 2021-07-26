@@ -2,21 +2,16 @@
 import os
 import re
 import shutil
+from src.path_files import *
 
 def create_path(path):
     if not os.path.exists(path):
         print("Create folder", path)
-        os.makedirs(path, 0o600)
-        os.chown(path, 1000, 0) # Rudloff id and group Root
-        os.chmod(path, 0o775) # Give all read access but Rudloff write access 
+        os.makedirs(path, 0o740)
+        os.chown(path, 1000, 1000) # Rudloff id and group Root
+        os.chmod(path, 0o740) # Give all read access but Rudloff write access 
 
 print("Configuring timelapse_trip app...")
-path_to_app = "/etc/capsule/timelapse_trip"
-path_to_log = "/var/log/capsule/timelapse_trip"
-path_to_timelapse_tmp = "/tmp/timelapse_trip"
-path_to_current_results = path_to_timelapse_tmp + "/results"
-path_to_conf = "/etc/capsule/timelapse_trip/config.yaml"
-path_to_conf = "/etc/capsule/timelapse_trip/config.yaml"
 path_to_services = "/etc/systemd/system/timelapse_trip.service"
 create_path(path_to_app)
 create_path(path_to_log)
