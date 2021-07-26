@@ -6,7 +6,7 @@ Wants=mosquitto.service
 
 [Service]
 ExecStartPre=/bin/sleep 10
-ExecStart=/home/rudloff/sources/CapsuleScripts/timelapse_geolocate/script/.venv/bin/python3 /home/rudloff/sources/CapsuleScripts/timelapse_geolocate/script/timelapse_trip.py
+ExecStart=/home/rudloff/sources/CapsuleScripts/timelapse_geolocate/script/.venv/bin/python3 /home/rudloff/sources/CapsuleScripts/timelapse_geolocate/src/timelapse_trip.py
 Restart=on-failure
 
 [Install]
