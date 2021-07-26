@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import tilemapbase
 import matplotlib.pyplot as plt
+import path_files
 
 
 def get_timelapse_to_process(timelapse_tmp_path)->List:
