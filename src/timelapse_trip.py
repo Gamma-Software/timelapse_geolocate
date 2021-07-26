@@ -9,7 +9,8 @@ import paho.mqtt.client as mqtt
 from subprocess import Popen, PIPE, TimeoutExpired
 from influxdb import InfluxDBClient, DataFrameClient
 from enums import *
-from common_methods import *
+from common import *
+from path_files import *
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -127,24 +128,29 @@ try:
             except KeyboardInterrupt:
                 stop_script(process, "Timelapse process as been killed by the user")
                 pass
-        timelapses_to_process = get_timelapse_to_process("/tmp/timelapse_trip/")
+        # Get the non empty timelapses that need to be processed
+        timelapses_to_process = get_timelapse_to_process(path_to_timelapse_tmp)
         if timelapses_to_process: # If the list is not empty
             client.publish("process/timelapse_trip/last_status", "Generate timelapse")
             for timelapse_to_process in timelapses_to_process:
+                client.publish("process/timelapse_trip/timelapse_process_progress", 0)
                 # Retrieve the timestamps
                 images_sorted = sorted(os.listdir(timelapse_to_process))
                 timestamps = [datetime.strptime(timestamp_dirty.strip(".jpg"), '%Y-%m-%d_%H-%M-%S').isoformat()\
                      for timestamp_dirty in images_sorted]
+                client.publish("process/timelapse_trip/timelapse_process_progress", 10)
                 
                 # Connect to influxdb client
-                client = DataFrameClient("localhost", "8086", "rudloff", "y4uv3jpc", "telegraf")
-                #client =  DataFrameClient(conf["influxdb"]["url"], conf["influxdb"]["port"], conf["influxdb"]["name"], conf["influxdb"]["pass"], conf["influxdb"]["database"])
+                #client = DataFrameClient("localhost", "8086", "rudloff", "y4uv3jpc", "telegraf")
+                client =  DataFrameClient(conf["influxdb"]["url"], conf["influxdb"]["port"], conf["influxdb"]["name"], conf["influxdb"]["pass"], conf["influxdb"]["database"])
                 # Get the list of gps coordinates from the influxdb database
                 gps_coords = retrieve_lat_lon(timestamps, client)
                 
                 # Construct the map
-                t = tilemapbase.tiles.build_OSM()
-                #t = tilemapbase.tiles.Tiles("http://localhost:8000/osm/{zoom}/{x}/{y}.png", "OSM", headers={"User-Agent":"TileMapBase"})
+                if conf["map_generation_mean"] == "local":
+                    t = tilemapbase.tiles.Tiles(conf["map_generation"]["url"], conf["map_generation"]["tile_name"], headers={"User-Agent":"TileMapBase"})
+                else:
+                    t = tilemapbase.tiles.build_OSM()
                
                 # Create the map folder
                 path_to_maps = os.path.join(timelapse_to_process, "maps")
@@ -162,12 +168,12 @@ try:
                 
                 # Combine the map and the frame and generate the mp4 timelapse
                 frameSize = (2304, 1296)
-                result_folder = "/tmp/timelapse_trip/results" + os.path.basename(timelapse_to_process)
+                result_folder = path_to_current_results + os.path.basename(timelapse_to_process)
                 os.makedirs(result_folder, 0o600)
                 video_out = cv2.VideoWriter(result_folder + "/video.mp4",
                  cv2.VideoWriter_fourcc(*'mp4v'), 10, frameSize)
                 for timestamp in images_sorted:
-                    video_out.write(combine(os.path.join(path_to_maps,timestamp.strip(".jpg"))+".png", os.path.join("/tmp/timelapse_trip/",
+                    video_out.write(combine(os.path.join(path_to_maps,timestamp.strip(".jpg"))+".png", os.path.join(path_to_timelapse_tmp,
                      timelapse_to_process, timestamp)))
                     time.sleep(0.05)
                 video_out.release()
@@ -176,13 +182,13 @@ try:
                 video_out = cv2.VideoWriter(result_folder + "/video.gif",
                  cv2.VideoWriter_fourcc(*'gif'), 10, frameSize)
                 for timestamp in images_sorted:
-                    video_out.write(combine("map/"+timestamp.strip(".jpg")+".png", os.path.join("/tmp/timelapse_trip/",
+                    video_out.write(combine(os.path.join(path_to_maps,timestamp.strip(".jpg"))+".png", os.path.join(path_to_timelapse_tmp,
                      timelapse_to_process, timestamp)))
                     time.sleep(0.05)
                 video_out.release()
                 time.sleep(0.5)
         # Clear empty tmp folder or already generated timelapses
-        clear_timelapse_to_process("/tmp/timelapse_trip", "/tmp/timelapse_trip/results")
+        clear_timelapse_to_process(path_to_timelapse_tmp, path_to_current_results)
         time.sleep(1)
 except KeyboardInterrupt:
     stop_script(process, "Timelapse process as been killed by the user")
