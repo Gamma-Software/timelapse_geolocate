@@ -173,11 +173,12 @@ try:
                     lon_list.append(lon)
                     # Retrieve the maps and save it
                     retrieve_save_map(lat_list, lon_list, t, datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S'), path_to_maps)
-                    time.sleep(0.1)
+                    time.sleep(0.01)
                 
                 # Combine the map and the frame and generate the mp4 timelapse
                 frameSize = (2304, 1296)
                 result_folder = path_to_current_results + "/" + os.path.basename(timelapse_to_process)
+                os.makedirs(result_folder, 0o740)
                 video_out = cv2.VideoWriter(result_folder + "/video.mp4",
                  cv2.VideoWriter_fourcc(*'mp4v'), 10, frameSize)
                 for idx, timestamp in enumerate(gps_coords.index):
@@ -185,10 +186,10 @@ try:
                     client.publish("process/timelapse_trip/timelapse_process_progress", 10+50+round(20*idx/len(images_sorted)))
                     video_out.write(combine(os.path.join(path_to_maps,timestamp_date)+".png", os.path.join(timelapse_to_process, timestamp_date)+".jpg",
                      timestamp_date, gps_coords["latitude"].values[idx], gps_coords["longitude"].values[idx]))
-                    time.sleep(0.05)
+                    time.sleep(0.01)
                 video_out.release()
                 logging.info("Timelapse saved: " + result_folder + "/video.mp4")
-               
+                
                 # Combine the map and the frame and generate the gif timelapse
                 clip = (VideoFileClip(result_folder + "/video.mp4"))
                 clip.write_gif(result_folder + "/video.gif")

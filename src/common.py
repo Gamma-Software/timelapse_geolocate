@@ -10,7 +10,7 @@ import tilemapbase
 import matplotlib.pyplot as plt
 
 
-def get_timelapse_to_process(timelapse_tmp_path, timelapse_generated_path)->List:
+def get_timelapse_to_process(timelapse_tmp_path, timelapse_generated_path)->List[str]:
     """
     Get the list of timelapse folders to process if they are not empty
     timelapse_tmp_path: initial temporary folder
@@ -63,7 +63,6 @@ def retrieve_lat_lon(timestamps: List[datetime],  influxdb_client: DataFrameClie
     latitude = latitude.resample('1S').first()
     longitude = longitude.resample('1S').first()
     gps_coords = pd.DataFrame()
-    gps_coords = latitude.copy()
     gps_coords = latitude.copy()
     gps_coords["longitude"] = longitude["value"]
     gps_coords.columns = ["longitude", "latitude"]
