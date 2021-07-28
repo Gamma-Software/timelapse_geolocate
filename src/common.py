@@ -46,12 +46,12 @@ def retrieve_lat_lon(timestamps: List[datetime],  influxdb_client: DataFrameClie
     
     # Query the lat and lon values inside of the first and last + margin timestamps
     result = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
-         = '/gps_measure/latitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
+         = 'gps_measure/latitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
     latitude = pd.DataFrame()
     if result:
         latitude = result["mqtt_consumer"]
     result = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
-         = '/gps_measure/longitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
+         = 'gps_measure/longitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
     longitude = pd.DataFrame()
     if result:
         longitude = result["mqtt_consumer"]
@@ -66,7 +66,7 @@ def retrieve_lat_lon(timestamps: List[datetime],  influxdb_client: DataFrameClie
     gps_coords = pd.DataFrame()
     gps_coords = latitude.copy()
     gps_coords["longitude"] = longitude["value"]
-    gps_coords.columns = ["longitude", "latitude"]
+    gps_coords.columns = ["latitude", "longitude"]
     # Fill NaN cells
     gps_coords = gps_coords.fillna(method="ffill")
     # Filter out only on timestamps from the images
@@ -86,16 +86,8 @@ def retrieve_save_map(lat, lon, tiles, output_title, output_path):
     extent = tilemapbase.Extent.from_lonlat(
         lon[-1] - degree_range, lon[-1] + degree_range, lat[-1] - degree_range, lat[-1] + degree_range)
     extent = extent.to_aspect(1.0)
-    fig, ax = plt.subplots(figsize=(8, 8), dpi=100) 
-    ax.xaxis.set_visible(False)
-    ax.yaxis.set_visible(False)
-    plotter = tilemapbase.Plotter(extent, tiles, width=600)
-    plotter.plot(ax, tiles)
-    # TODO simplify database usage
-    x, y = tilemapbase.project(*[lon[-1], lat[-1]])
-    ax.scatter(x,y, marker=".", color="black", linewidth=20)
-    plt.savefig(output_path+"/"+output_title+".png",bbox_inches='tight', dpi=200, pad_inches=0)
-    plt.close()
+    plotter = tilemapbase.Plotter(extent, tiles, zoom=5)
+    plotter.as_one_image(True).resize((500,500)).save(output_path+"/"+output_title+".png")
 
 def combine(map_path, frame_path, timestamp, latitude, longitude):
     """

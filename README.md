@@ -23,3 +23,5 @@ TODO
 # Mosquitto publish topics
 process/timelapse_trip/alive
 process/timelapse_trip/last_status
+process/timelapse_trip/timelapse_process_progress
+timelapse_trip/stop_command

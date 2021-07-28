@@ -42,13 +42,11 @@ logging.basicConfig(
 # ----------------------------------------------------------------------------------------------------------------------
 motion_state = Motion.IDLE # By default
 stop_command = False
-latitude = 0.0,
-longitude = 0.0
 # MQTT methods
 def on_connect(client, userdata, flags, rc):  # The callback for when the client connects to the broker
     logging.info("Connected with result code {0}".format(str(rc)))  # Print result of connection attempt
     
-    for topic in ["capsule/motion_state", "timelapse_trip/stop_command", "/gps_measure/latitude", "/gps_measure/longitude"]:
+    for topic in ["capsule/motion_state", "timelapse_trip/stop_command", "gps_measure/latitude", "gps_measure/longitude"]:
         r=client.subscribe(topic)
         tries = 10
         while r[0]!=0:
@@ -74,10 +72,6 @@ def on_message(client, userdata, msg):  # The callback for when a PUBLISH messag
             motion_state = command
         else:
             logging.warning("Change app state from " + repr(motion_state) + " to " + repr(command) + " failed")
-    if msg.topic == "/gps_measure/latitude":
-        latitude = data
-    if msg.topic == "/gps_measure/longitude":
-        longitude = data
 
 def wait_for(client,msgType,period=0.25):
  if msgType=="SUBACK":
@@ -190,9 +184,12 @@ try:
                 video_out.release()
                 logging.info("Timelapse saved: " + result_folder + "/video.mp4")
 
+                break
+                # TODO convert in GIF (but for now its generation is heavy in terms off ram and memory)
                 # Combine the map and the frame and generate the gif timelapse
                 clip = (VideoFileClip(result_folder + "/video.mp4"))
                 clip.write_gif(result_folder + "/video.gif")
+                clip.write_gif()
                 client.publish("process/timelapse_trip/timelapse_process_progress", 100)
                 logging.info("Timelapse saved: " + result_folder + "/video.gif")
                 time.sleep(0.1)
