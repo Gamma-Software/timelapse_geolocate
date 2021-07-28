@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import shutil
 import yaml
 import sys
 import time
@@ -11,6 +12,7 @@ from influxdb import DataFrameClient
 from enums import *
 from common import *
 from path_files import *
+from moviepy.editor import *
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -112,7 +114,6 @@ try:
     while True:
         client.publish("process/timelapse_trip/alive", True)
         client.publish("process/timelapse_trip/last_status", "Waiting for action")
-        stop_command = True # TODO REMOVE !
         if motion_state != Motion.STOP and not stop_command:
             args = ["/home/rudloff/sources/CapsuleScripts/timelapse_geolocate/src/ffmpeg_timelapse_thread.sh", str(conf["rtsp"]["framerate"])]
             process = Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, encoding='utf8')
@@ -131,11 +132,11 @@ try:
                 stop_script(process, "Timelapse process as been killed by the user")
                 pass
         # Get the non empty timelapses that need to be processed
-        timelapses_to_process = get_timelapse_to_process(path_to_timelapse_tmp)
+        timelapses_to_process = get_timelapse_to_process(path_to_timelapse_tmp, path_to_current_results)
         if timelapses_to_process: # If the list is not empty
             client.publish("process/timelapse_trip/last_status", "Generate timelapse")
             for timelapse_to_process in timelapses_to_process:
-                logging.info("Start process the timelapse:", timelapse_to_process)
+                logging.info("Start process the timelapse:" + timelapse_to_process)
                 client.publish("process/timelapse_trip/timelapse_process_progress", 0)
                 # Retrieve the timestamps
                 images_sorted = sorted(os.listdir(timelapse_to_process))
@@ -145,12 +146,13 @@ try:
                 
                 # Connect to influxdb client
                 #client = DataFrameClient("localhost", "8086", "rudloff", "y4uv3jpc", "telegraf")
-                client =  DataFrameClient(conf["influxdb"]["url"], conf["influxdb"]["port"], conf["influxdb"]["user"], conf["influxdb"]["pass"], conf["influxdb"]["database"])
+                influxdb_client =  DataFrameClient(conf["influxdb"]["url"], conf["influxdb"]["port"], conf["influxdb"]["user"], conf["influxdb"]["pass"], conf["influxdb"]["database"])
                 # Get the list of gps coordinates from the influxdb database
-                gps_coords = retrieve_lat_lon(timestamps, client)
+                gps_coords = pd.DataFrame(retrieve_lat_lon(timestamps, influxdb_client))
                 if gps_coords.empty:
-                    print()
-                    # TODO
+                    logging.warning("The gps coordinates corresponding are not retrieved in the influxdb database. The timelapse frames will be removed")
+                    shutil.rmtree(timelapse_to_process)
+                    break
                 
                 # Construct the map
                 if conf["map_generation_mean"] == "local":
@@ -175,28 +177,23 @@ try:
                 
                 # Combine the map and the frame and generate the mp4 timelapse
                 frameSize = (2304, 1296)
-                result_folder = path_to_current_results + os.path.basename(timelapse_to_process)
-                os.makedirs(result_folder, 0o740)
+                result_folder = path_to_current_results + "/" + os.path.basename(timelapse_to_process)
                 video_out = cv2.VideoWriter(result_folder + "/video.mp4",
                  cv2.VideoWriter_fourcc(*'mp4v'), 10, frameSize)
-                for idx, timestamp in enumerate(images_sorted):
+                for idx, timestamp in enumerate(gps_coords.index):
+                    timestamp_date = datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S')
                     client.publish("process/timelapse_trip/timelapse_process_progress", 10+50+round(20*idx/len(images_sorted)))
-                    video_out.write(combine(os.path.join(path_to_maps,timestamp.strip(".jpg"))+".png", os.path.join(path_to_timelapse_tmp,
-                     timelapse_to_process, timestamp)))
+                    video_out.write(combine(os.path.join(path_to_maps,timestamp_date)+".png", os.path.join(timelapse_to_process, timestamp_date)+".jpg",
+                     timestamp_date, gps_coords["latitude"].values[idx], gps_coords["longitude"].values[idx]))
                     time.sleep(0.05)
                 video_out.release()
-                logging.info("Timelapse saved: ", result_folder, "/video.mp4")
+                logging.info("Timelapse saved: " + result_folder + "/video.mp4")
                
                 # Combine the map and the frame and generate the gif timelapse
-                video_out = cv2.VideoWriter(result_folder + "/video.gif",
-                 cv2.VideoWriter_fourcc(*'gif'), 10, frameSize)
-                for idx, timestamp in enumerate(images_sorted):
-                    client.publish("process/timelapse_trip/timelapse_process_progress", 10+50+round(20*idx/len(images_sorted)))
-                    video_out.write(combine(os.path.join(path_to_maps,timestamp.strip(".jpg"))+".png", os.path.join(path_to_timelapse_tmp,
-                     timelapse_to_process, timestamp)))
-                    time.sleep(0.05)
-                video_out.release()
-                logging.info("Timelapse saved: ", result_folder, "/video.gif")
+                clip = (VideoFileClip(result_folder + "/video.mp4"))
+                clip.write_gif(result_folder + "/video.gif")
+                client.publish("process/timelapse_trip/timelapse_process_progress", 100)
+                logging.info("Timelapse saved: " + result_folder + "/video.gif")
                 time.sleep(0.5)
         # Clear empty tmp folder or already generated timelapses
         clear_timelapse_to_process(path_to_timelapse_tmp, path_to_current_results)

@@ -1,4 +1,5 @@
 import os
+import shutil
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
@@ -9,15 +10,16 @@ import tilemapbase
 import matplotlib.pyplot as plt
 
 
-def get_timelapse_to_process(timelapse_tmp_path)->List:
+def get_timelapse_to_process(timelapse_tmp_path, timelapse_generated_path)->List:
     """
     Get the list of timelapse folders to process if they are not empty
     timelapse_tmp_path: initial temporary folder
+    timelapse_generated_path: path to result folder
     """
     return_list = []
     for timelapse_to_process in os.listdir(timelapse_tmp_path):
         path = os.path.join(timelapse_tmp_path, timelapse_to_process)
-        if len(os.listdir(path)) != 0:
+        if len(os.listdir(path)) != 0 and timelapse_to_process not in os.listdir(timelapse_generated_path):
             return_list.append(path)
     return return_list
 
@@ -29,7 +31,7 @@ def clear_timelapse_to_process(timelapse_tmp_path, timelapse_generated_path):
     for timelapse_to_process in os.listdir(timelapse_tmp_path):
         path = os.path.join(timelapse_tmp_path, timelapse_to_process)
         if len(os.listdir(path)) == 0 or timelapse_to_process in os.listdir(timelapse_generated_path):
-            os.rmdir(path)
+            shutil.rmtree(path)
 
 def retrieve_lat_lon(timestamps: List[datetime],  influxdb_client: DataFrameClient) -> pd.DataFrame():
     """
@@ -39,24 +41,32 @@ def retrieve_lat_lon(timestamps: List[datetime],  influxdb_client: DataFrameClie
     """
     
     start = (datetime.fromisoformat(timestamps[0]) + timedelta(seconds=-5)).isoformat()
-    end = (datetime.fromisoformat(timestamps[0]) + timedelta(seconds=5)).isoformat()
+    end = (datetime.fromisoformat(timestamps[-1]) + timedelta(seconds=5)).isoformat()
     
     # Query the lat and lon values inside of the first and last + margin timestamps
-    latitude = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
+    result = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
          = '/gps_measure/latitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
-    longitude = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
+    latitude = pd.DataFrame()
+    if result:
+        latitude = result["mqtt_consumer"]
+    result = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
          = '/gps_measure/longitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
+    longitude = pd.DataFrame()
+    if result:
+        longitude = result["mqtt_consumer"]
     # Check the values
     if latitude.empty or longitude.empty:
         return pd.DataFrame()
     # Clean, resample 1s just to be sure, add the values to one specific DataFrame
-    latitude["mqtt_consumer"].drop(["host", "topic"], axis=1)
-    longitude["mqtt_consumer"].drop(["host", "topic"], axis=1)
-    latitude["mqtt_consumer"] = latitude["mqtt_consumer"].resample('1S').first()
-    longitude["mqtt_consumer"] = longitude["mqtt_consumer"].resample('1S').first()
-    gps_coords = latitude["mqtt_consumer"].copy()
-    gps_coords["longitude"] = longitude["mqtt_consumer"]["value"]
-    gps_coords.columns = ["latitude"]
+    latitude.drop(["host", "topic"], axis=1, inplace=True)
+    longitude.drop(["host", "topic"], axis=1, inplace=True)
+    latitude = latitude.resample('1S').first()
+    longitude = longitude.resample('1S').first()
+    gps_coords = pd.DataFrame()
+    gps_coords = latitude.copy()
+    gps_coords = latitude.copy()
+    gps_coords["longitude"] = longitude["value"]
+    gps_coords.columns = ["longitude", "latitude"]
     # Fill NaN cells
     gps_coords = gps_coords.fillna(method="ffill")
     # Filter out only on timestamps from the images
@@ -84,7 +94,7 @@ def retrieve_save_map(lat, lon, tiles, output_title, output_path):
     # TODO simplify database usage
     x, y = tilemapbase.project(*[lon[-1], lat[-1]])
     ax.scatter(x,y, marker=".", color="black", linewidth=20)
-    plt.savefig(output_path+output_title+".png",bbox_inches='tight', dpi=200, pad_inches=0)
+    plt.savefig(output_path+"/"+output_title+".png",bbox_inches='tight', dpi=200, pad_inches=0)
     plt.close()
 
 def combine(map_path, frame_path, timestamp, latitude, longitude):
@@ -124,7 +134,7 @@ def combine(map_path, frame_path, timestamp, latitude, longitude):
     frame[0:frame.shape[0], 0:frame.shape[1]] = dst
     
     # Diplay metadata
-    date = datetime.strftime(timestamp, "%m/%d/%Y, %H:%M:%S")
+    date = timestamp
     localisation = " lat: " + str(round(latitude, 1)) + ", " + "lon :" + str(round(longitude, 1))
     cv2.putText(frame,date + ", " + localisation,(10,30), cv2.FONT_HERSHEY_DUPLEX, 1,(0,0,0),2,cv2.LINE_AA)
     
