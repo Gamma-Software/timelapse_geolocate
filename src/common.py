@@ -30,6 +30,7 @@ def clear_timelapse_to_process(timelapse_tmp_path, timelapse_generated_path):
     """
     for timelapse_to_process in os.listdir(timelapse_tmp_path):
         path = os.path.join(timelapse_tmp_path, timelapse_to_process)
+        # TODO remove depending on a duration policy
         if len(os.listdir(path)) == 0 or timelapse_to_process in os.listdir(timelapse_generated_path):
             shutil.rmtree(path)
 

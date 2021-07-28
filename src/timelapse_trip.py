@@ -189,15 +189,16 @@ try:
                     time.sleep(0.01)
                 video_out.release()
                 logging.info("Timelapse saved: " + result_folder + "/video.mp4")
-                
+
                 # Combine the map and the frame and generate the gif timelapse
                 clip = (VideoFileClip(result_folder + "/video.mp4"))
                 clip.write_gif(result_folder + "/video.gif")
                 client.publish("process/timelapse_trip/timelapse_process_progress", 100)
                 logging.info("Timelapse saved: " + result_folder + "/video.gif")
-                time.sleep(0.5)
+                time.sleep(0.1)
         # Clear empty tmp folder or already generated timelapses
-        clear_timelapse_to_process(path_to_timelapse_tmp, path_to_current_results)
+        # TODO for now the timelapses are not removed 
+        #clear_timelapse_to_process(path_to_timelapse_tmp, path_to_current_results)
         time.sleep(1)
 except KeyboardInterrupt:
     stop_script(process, "Timelapse process as been killed by the user")
