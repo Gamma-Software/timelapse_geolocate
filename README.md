@@ -1,27 +1,27 @@
 *Date of creation: 29/03/2021*
 
-# TimelapseGeolocate
-Create a timelapse video combining photos and their gps positions (displaying the current position on a map) and the date and kilometer travelled. This project is first made for documenting a roadtrip and facilitate the sharing of the progress.
-
-## Key Features
-- Keeps track of the gps positions during the timelapse
-- Display the current time
-- Display the current kilometer travelled
-- Display the current or nextto city
-- Display the a map to show the previous positions and the current one
-- Get the photos of the trip at even intervals synchronized with the data
-- Create a timelaspe combining all the photos
-
-## Safeguards
-- Ensure to not capture a new timelapse if already processing one (unless this can be threaded)
+# Timelapse Trip
+Retrive the rtsp stream from a IP cam (for now) and create a timelapse that displays a map to indicate the trip progression
 
 ## Requirements
 TODO
 
+# Installation
+Create a python virtual environnement: 'virtualenv .venv"
+Install requirements 'pip install -r requirements.txt'
+Install the configurations and service 'python3 (from the virtualenv) install.py'
+Change default user and pass config in /etc/capsule/timelapse_trip/config.yaml
+
 ## Details
 ### Programming Language
-This project is written in python and is meant to be run on a device that supports GPS queries.
+This project is written in python and is meant to be run on a device that supports.
 
 ### Integration
 We assume that the script will only be run on Linux OS
 TODO
+
+# Mosquitto publish topics
+process/timelapse_trip/alive
+process/timelapse_trip/last_status
+process/timelapse_trip/timelapse_process_progress
+timelapse_trip/stop_command

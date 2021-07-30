@@ -1,0 +1,13 @@
+[Unit]
+Description=Take timelapse from the rtsp stream
+Requires=mosquitto.service
+After=mosquitto.service
+Wants=mosquitto.service
+
+[Service]
+ExecStartPre=/bin/sleep 10
+ExecStart=/home/rudloff/sources/CapsuleScripts/timelapse_geolocate/src/.venv/bin/python3 /home/rudloff/sources/CapsuleScripts/timelapse_geolocate/src/timelapse_trip.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
