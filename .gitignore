@@ -1,4 +1,4 @@
-offline-mapping-server
+experiments/offline-mapping-server
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
