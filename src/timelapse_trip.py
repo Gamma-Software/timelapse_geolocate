@@ -37,6 +37,9 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(message)s",
     datefmt='%m/%d/%Y %I:%M:%S %p')
 
+# Dump configuration
+logging.debug("Dump configuration: " + repr(conf))
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Initiate MQTT variables
 # ----------------------------------------------------------------------------------------------------------------------
