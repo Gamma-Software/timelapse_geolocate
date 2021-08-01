@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<head>    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_0c7d789ca36c487fa246e2c4e1e5ac76 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+            </style>
+        
+</head>
+<body>    
+    
+            <div class="folium-map" id="map_0c7d789ca36c487fa246e2c4e1e5ac76" ></div>
+        
+</body>
+<script>    
+    
+            var map_0c7d789ca36c487fa246e2c4e1e5ac76 = L.map(
+                "map_0c7d789ca36c487fa246e2c4e1e5ac76",
+                {
+                    center: [49.04545581982211, 2.0126577908204326],
+                    crs: L.CRS.EPSG3857,
+                    zoom: 15,
+                    zoomControl: true,
+                    preferCanvas: false,
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_4a1b440410cf4d1d995d4b66cfdd27a9 = L.tileLayer(
+                "http://capsule.local:8080/styles/klokantech-basic/{z}/{x}/{y}.png",
+                {"attribution": "\u003ca\u003eCapsule Offline Map\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            ).addTo(map_0c7d789ca36c487fa246e2c4e1e5ac76);
+        
+    
+            var marker_21466d71fc7b4cf0804bba001258a3f1 = L.marker(
+                [49.04545581982211, 2.0126577908204326],
+                {}
+            ).addTo(map_0c7d789ca36c487fa246e2c4e1e5ac76);
+        
+    
+            var icon_4c2f7369af0449c0900c330dc2420f04 = L.AwesomeMarkers.icon(
+                {"extraClasses": "fa-rotate-0", "icon": "cloud", "iconColor": "white", "markerColor": "blue", "prefix": "glyphicon"}
+            );
+            marker_21466d71fc7b4cf0804bba001258a3f1.setIcon(icon_4c2f7369af0449c0900c330dc2420f04);
+        
+    
+        var popup_fa28c5c4d30a49958962dc30dbf58acc = L.popup({"maxWidth": "100%"});
+
+        
+            var html_579586e3350b409dadb71a94e8fda4b8 = $(`<div id="html_579586e3350b409dadb71a94e8fda4b8" style="width: 100.0%; height: 100.0%;">Maison</div>`)[0];
+            popup_fa28c5c4d30a49958962dc30dbf58acc.setContent(html_579586e3350b409dadb71a94e8fda4b8);
+        
+
+        marker_21466d71fc7b4cf0804bba001258a3f1.bindPopup(popup_fa28c5c4d30a49958962dc30dbf58acc)
+        ;
+
+        
+    
+</script>

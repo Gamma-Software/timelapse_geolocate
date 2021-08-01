@@ -14,7 +14,7 @@ influxdb:
   pass: "pass"
   database: "telegraf"
 map_generation_mean: "online"
-map_gereration:
+map_generation:
   url: "http://localhost:8000/osm/{zoom}/{x}/{y}.png"
   tile_name: "osm"
 period_s: 0.5
