@@ -187,6 +187,11 @@ try:
                 video_out.release()
                 logging.info("Timelapse saved: " + result_folder + "/video.mp4")
 
+                # Remove the maps folder
+                if os.path.exists(path_to_maps):
+                    shutil.rmtree(path_to_maps)
+                    logging.info("Remove maps folder")
+
                 break
                 # TODO convert in GIF (but for now its generation is heavy in terms off ram and memory)
                 # Combine the map and the frame and generate the gif timelapse
