@@ -82,12 +82,12 @@ def retrieve_save_map(lat, lon, tiles, output_title, output_path):
     output_title: output title
     output_path: folder name to save the map to
     """
-    degree_range = 0.003
+    degree_range = 0.005 # 0.005 min -> 0.1 max, TODO make it variable depending on the vehicle speed
     extent = tilemapbase.Extent.from_lonlat(
         lon[-1] - degree_range, lon[-1] + degree_range, lat[-1] - degree_range, lat[-1] + degree_range)
     extent = extent.to_aspect(1.0)
-    plotter = tilemapbase.Plotter(extent, tiles, zoom=5)
-    plotter.as_one_image(True).resize((500,500)).save(output_path+"/"+output_title+".png")
+    plotter = tilemapbase.Plotter(extent, tiles, width=500)
+    plotter.as_one_image(True).save(output_path+"/"+output_title+".png")
 
 def combine(map_path, frame_path, timestamp, latitude, longitude):
     """
@@ -101,25 +101,27 @@ def combine(map_path, frame_path, timestamp, latitude, longitude):
     # Read images
     map_image = cv2.imread(map_path)
     frame = cv2.imread(frame_path)
-
-    # Resize the map images
     x_offset = y_offset = 20
-    scale_percent = 80
-    width = int(map_image.shape[1] * scale_percent / 100)
-    height = int(map_image.shape[0] * scale_percent / 100)
-    dsize = (width, height)
-    map_image = cv2.resize(map_image, dsize)
 
     # Create a circle mask
     mask = np.zeros(frame.shape[:2], dtype="uint8")
-    cv2.circle(mask, (frame.shape[1] - int(map_image.shape[0]/2) - x_offset,
-                      frame.shape[0] - int(map_image.shape[1]/2) - y_offset),
-               int(map_image.shape[0]/2), 255, -1)
+    circle_radius = int(min(frame.shape[0], frame.shape[1])*0.2) # 20% of the min frame size
+    circle_center = (frame.shape[1] - circle_radius - y_offset, frame.shape[0] - circle_radius - x_offset)
+    cv2.circle(mask, circle_center, circle_radius, 255, -1)
     mask_inv = cv2.bitwise_not(mask)
     frame_masked = cv2.bitwise_and(frame, frame, mask=mask_inv)
 
+    # Resize the map image to the shape of the mask circle
+    min_shape = circle_radius*2
+    if min(map_image.shape[0:2]) == map_image.shape[0]:
+        resize = (int(min_shape), int(min_shape * map_image.shape[0]/map_image.shape[1]))
+    else:
+        resize = (int(min_shape * map_image.shape[0]/map_image.shape[0]), int(min_shape))
+
+    map_image = cv2.resize(map_image, resize)
+
     # Incrust the map mask onto the frame
-    frame[frame.shape[0] - map_image.shape[0] - y_offset*2 : frame.shape[0] - y_offset*2,
+    frame[frame.shape[0] - map_image.shape[0] - y_offset : frame.shape[0] - y_offset,
           frame.shape[1] - map_image.shape[1] - x_offset : frame.shape[1] - x_offset] = map_image
     map_masked = cv2.bitwise_and(frame, frame, mask=mask)
     dst = cv2.add(frame_masked, map_masked)
