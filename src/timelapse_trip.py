@@ -31,7 +31,7 @@ with open(path_to_conf, "r") as file:
 # ----------------------------------------------------------------------------------------------------------------------
 connected = False
 logging.basicConfig(
-    filename="/var/log/capsule/timelapse_trip/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S") + ".log",
+    filename="/var/log/capsule/timelapse_trip.log",
     filemode="a",
     level=logging.DEBUG if conf["debug"] else logging.INFO,
     format="%(asctime)s %(levelname)s:%(message)s",
@@ -44,7 +44,7 @@ logging.debug("Dump configuration: " + repr(conf))
 # Initiate MQTT variables
 # ----------------------------------------------------------------------------------------------------------------------
 motion_state = Motion.IDLE # By default
-stop_command = False
+stop_command = True
 # MQTT methods
 def on_connect(client, userdata, flags, rc):  # The callback for when the client connects to the broker
     logging.info("Connected with result code {0}".format(str(rc)))  # Print result of connection attempt
