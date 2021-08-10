@@ -6,7 +6,7 @@ Wants=docker.service
 
 [Service]
 ExecStartPre=/bin/sleep 10
-ExecStart=/home/rudloff/sources/CapsuleScripts/timelapse_geolocate/src/.venv/bin/python3 /home/rudloff/sources/CapsuleScripts/timelapse_geolocate/src/timelapse_trip.py
+ExecStart=/home/rudloff/sources/CapsuleScripts/timelapse_geolocate/.venv/bin/python3 /home/rudloff/sources/CapsuleScripts/timelapse_geolocate/src/timelapse_trip.py
 Restart=on-failure
 
 [Install]
