@@ -9,7 +9,7 @@ def create_path(path):
         print("Create folder", path)
         os.makedirs(path, 0o740)
         os.chown(path, 1000, 1000) # Rudloff id and group Root
-        os.chmod(path, 0o774) # Give all read access but Rudloff write access 
+        os.chmod(path, 0o775) # Give all read access but Rudloff write access 
 
 print("Configuring timelapse_trip app...")
 path_to_services = "/etc/systemd/system/timelapse_trip.service"
