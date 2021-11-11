@@ -25,4 +25,5 @@ if os.path.exists(path_to_services):
     print("Remove timelapse_trip service")
     os.system("systemctl stop timelapse_trip.service")
     os.system("systemctl disable timelapse_trip.service")
+    os.remove(path_to_services)
     os.system("systemctl daemon-reload")
