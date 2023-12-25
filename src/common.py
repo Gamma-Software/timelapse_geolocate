@@ -17,6 +17,8 @@ def get_timelapse_to_process(timelapse_tmp_path, timelapse_generated_path)->List
     timelapse_generated_path: path to result folder
     """
     return_list = []
+    if os.path.exists(timelapse_tmp_path) == False:
+        os.mkdir(timelapse_tmp_path)
     for timelapse_to_process in os.listdir(timelapse_tmp_path):
         path = os.path.join(timelapse_tmp_path, timelapse_to_process)
         if len(os.listdir(path)) != 0 and timelapse_to_process not in os.listdir(timelapse_generated_path):
@@ -40,18 +42,18 @@ def retrieve_lat_lon(timestamps: List[datetime],  influxdb_client: DataFrameClie
     influxdb_client: influxbd client to connect to
     return a Pandas DataFrame; warn: it can be empty if no latlon is found
     """
-    
+
     start = (datetime.fromisoformat(timestamps[0]) + timedelta(seconds=-5)).isoformat()
     end = (datetime.fromisoformat(timestamps[-1]) + timedelta(seconds=5)).isoformat()
-    
+
     # Query the lat and lon values inside of the first and last + margin timestamps
     result = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
-         = 'gps_measure/latitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
+         = 'router/gps/latitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
     latitude = pd.DataFrame()
     if result:
         latitude = result["mqtt_consumer"]
     result = influxdb_client.query("SELECT * FROM \"autogen\".\"mqtt_consumer\" WHERE (\"topic\"\
-         = 'gps_measure/longitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
+         = 'router/gps/longitude') AND time >= '"+start+"Z' AND time <= '"+end+"Z'")
     longitude = pd.DataFrame()
     if result:
         longitude = result["mqtt_consumer"]
@@ -126,11 +128,11 @@ def combine(map_path, frame_path, timestamp, latitude, longitude):
     map_masked = cv2.bitwise_and(frame, frame, mask=mask)
     dst = cv2.add(frame_masked, map_masked)
     frame[0:frame.shape[0], 0:frame.shape[1]] = dst
-    
+
     # Diplay metadata
     date = timestamp
     localisation = " lat: " + str(round(latitude, 1)) + ", " + "lon :" + str(round(longitude, 1))
     cv2.putText(frame,date + ", " + localisation,(10,30), cv2.FONT_HERSHEY_DUPLEX, 1,(0,0,0),2,cv2.LINE_AA)
-    
+
     # Save frame
     return frame

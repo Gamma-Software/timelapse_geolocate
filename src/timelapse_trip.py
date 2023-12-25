@@ -45,11 +45,13 @@ logging.debug("Dump configuration: " + repr(conf))
 # ----------------------------------------------------------------------------------------------------------------------
 motion_state = Motion.IDLE # By default
 stop_command = True
+ignition = False
+car_moving = False
 # MQTT methods
 def on_connect(client, userdata, flags, rc):  # The callback for when the client connects to the broker
     logging.info("Connected with result code {0}".format(str(rc)))  # Print result of connection attempt
-    
-    for topic in ["capsule/motion_state", "timelapse_trip/stop_command", "gps_measure/latitude", "gps_measure/longitude"]:
+
+    for topic in ["router/car/running", "timelapse_trip/stop_command", "router/gps/latitude", "router/gps/longitude"]:
         r=client.subscribe(topic)
         tries = 10
         while r[0]!=0:
@@ -63,18 +65,34 @@ def on_connect(client, userdata, flags, rc):  # The callback for when the client
                 sys.exit(1)
 
 def on_message(client, userdata, msg):  # The callback for when a PUBLISH message is received from the server.
-    global motion_state, stop_command, latitude, longitude
+    global ignition, car_moving, stop_command
+
+    def update_state(state: Motion):
+        command = state
+        # Accept instance of only TimelapseGeneratorCommand
+        if isinstance(command, Motion):
+            logging.info("Change app state from " + repr(state) + " to " + repr(command) + " succeeded")
+            state = command
+        else:
+            logging.warning("Change app state from " + repr(state) + " to " + repr(command) + " failed")
+
     data = msg.payload.decode("utf-8")
     if msg.topic == "timelapse_trip/stop_command":
         stop_command = True if data == "True" else False
-    if msg.topic == "capsule/motion_state":
-        command = Motion[data]
-        # Accept instance of only TimelapseGeneratorCommand
-        if isinstance(command, Motion):
-            logging.info("Change app state from " + repr(motion_state) + " to " + repr(command) + " succeeded")
-            motion_state = command
-        else:
-            logging.warning("Change app state from " + repr(motion_state) + " to " + repr(command) + " failed")
+    if msg.topic == "router/car/running":
+        ignition = bool(data)
+    if msg.topic == "router/car/moving":
+        car_moving = bool(data)
+
+    if ignition and car_moving:
+        # The ignition is on and the car is moving
+        update_state(Motion.DRIVE)
+    elif ignition:
+        # The car is on
+        update_state(Motion.IDLE)
+    else:
+        update_state(Motion.STOP)
+
 
 def wait_for(client,msgType,period=0.25):
  if msgType=="SUBACK":
@@ -100,13 +118,17 @@ while not client.is_connected():
 # Main loop
 # ----------------------------------------------------------------------------------------------------------------------
 def stop_script(process, why):
+    if not process:
+        return
     logging.info("Process killed: " + why)
     process.stdin.write("q")
     process.communicate()[0]
     process.stdin.close()
     logging.info("Wait 5 seconds for the subprocess to be correctly killed")
     time.sleep(5)
-    
+
+
+process = None
 try:
     while True:
         client.publish("process/timelapse_trip/alive", True)
@@ -116,6 +138,9 @@ try:
             process = Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, encoding='utf8')
             try:
                 logging.info("Start timelapse")
+
+                logging.info("Start camera if not ON")
+                os.system("curl http://192.168.10.1/cgi-bin/io_state\?username\=rudloff\&password\=pam1249CS1110ragot\&pin\=dout2\&state\=on")
                 while True:
                     client.publish("process/timelapse_trip/alive", True)
                     client.publish("process/timelapse_trip/last_status", "Take picture")
@@ -140,7 +165,7 @@ try:
                 timestamps = [datetime.strptime(timestamp_dirty.strip(".jpg"), '%Y-%m-%d_%H-%M-%S').isoformat()\
                      for timestamp_dirty in images_sorted]
                 client.publish("process/timelapse_trip/timelapse_process_progress", 10)
-                
+
                 # Connect to influxdb client
                 #client = DataFrameClient("localhost", "8086", "rudloff", "y4uv3jpc", "telegraf")
                 influxdb_client =  DataFrameClient(conf["influxdb"]["url"], conf["influxdb"]["port"], conf["influxdb"]["user"], conf["influxdb"]["pass"], conf["influxdb"]["database"])
@@ -150,18 +175,18 @@ try:
                     logging.warning("The gps coordinates corresponding are not retrieved in the influxdb database. The timelapse frames will be removed")
                     shutil.rmtree(timelapse_to_process)
                     break
-                
+
                 # Construct the map
                 if conf["map_generation_mean"] == "local":
                     t = tilemapbase.tiles.Tiles(conf["map_generation"]["url"], conf["map_generation"]["tile_name"], headers={"User-Agent":"TileMapBase"})
                 else:
                     t = tilemapbase.tiles.build_OSM()
-               
+
                 # Create the map folder
                 path_to_maps = os.path.join(timelapse_to_process, "maps")
                 os.makedirs(path_to_maps, 0o740)
                 os.chown(path_to_maps, 1000, 1000) # Rudloff id and group Root
-                os.chmod(path_to_maps, 0o775) # Give all read access but Rudloff write access 
+                os.chmod(path_to_maps, 0o775) # Give all read access but Rudloff write access
                 lat_list = []
                 lon_list = []
                 for lat, lon, timestamp in zip(gps_coords["latitude"].tolist(), gps_coords["longitude"].tolist(), gps_coords.index) :
@@ -171,7 +196,7 @@ try:
                     # Retrieve the maps and save it
                     retrieve_save_map(lat_list, lon_list, t, datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S'), path_to_maps)
                     time.sleep(0.01)
-                
+
                 # Combine the map and the frame and generate the mp4 timelapse
                 frameSize = (2304, 1296)
                 result_folder = path_to_current_results + "/" + os.path.basename(timelapse_to_process)
@@ -202,7 +227,7 @@ try:
                 logging.info("Timelapse saved: " + result_folder + "/video.gif")
                 time.sleep(0.1)
         # Clear empty tmp folder or already generated timelapses
-        # TODO for now the timelapses are not removed 
+        # TODO for now the timelapses are not removed
         #clear_timelapse_to_process(path_to_timelapse_tmp, path_to_current_results)
         time.sleep(1)
 except KeyboardInterrupt:
