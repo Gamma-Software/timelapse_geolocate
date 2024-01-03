@@ -68,13 +68,13 @@ def on_message(client, userdata, msg):  # The callback for when a PUBLISH messag
     global ignition, car_moving, stop_command
 
     def update_state(state: Motion):
-        command = state
-        # Accept instance of only TimelapseGeneratorCommand
-        if isinstance(command, Motion):
-            logging.info("Change app state from " + repr(state) + " to " + repr(command) + " succeeded")
-            state = command
+        motion_state = state
+        if isinstance(state, Motion):
+            if state != motion_state:
+                logging.info("Change app state from " + repr(state) + " to " + repr(motion_state) + " succeeded")
+                state = motion_state
         else:
-            logging.warning("Change app state from " + repr(state) + " to " + repr(command) + " failed")
+            logging.warning("Change app state from " + repr(state) + " to " + repr(motion_state) + " failed")
 
     data = msg.payload.decode("utf-8")
     if msg.topic == "timelapse_trip/stop_command":
@@ -87,11 +87,12 @@ def on_message(client, userdata, msg):  # The callback for when a PUBLISH messag
     if ignition and car_moving:
         # The ignition is on and the car is moving
         update_state(Motion.DRIVE)
-    elif ignition:
-        # The car is on
-        update_state(Motion.IDLE)
-    else:
+    if not ignition and not car_moving:
         update_state(Motion.STOP)
+    if ignition and not car_moving:
+        # The car is on but not moving
+        update_state(Motion.IDLE)
+
 
 
 def wait_for(client,msgType,period=0.25):
@@ -172,15 +173,15 @@ try:
                 # Get the list of gps coordinates from the influxdb database
                 gps_coords = pd.DataFrame(retrieve_lat_lon(timestamps, influxdb_client))
                 if gps_coords.empty:
-                    logging.warning("The gps coordinates corresponding are not retrieved in the influxdb database. The timelapse frames will be removed")
+                    logging.warning("The gps coordinates corresponding are not retrieved in the influxdb database. The timelapse frames without the map")
                     shutil.rmtree(timelapse_to_process)
                     break
 
                 # Construct the map
                 if conf["map_generation_mean"] == "local":
-                    t = tilemapbase.tiles.Tiles(conf["map_generation"]["url"], conf["map_generation"]["tile_name"], headers={"User-Agent":"TileMapBase"})
+                    tiles = tilemapbase.tiles.Tiles(conf["map_generation"]["url"], conf["map_generation"]["tile_name"], headers={"User-Agent":"TileMapBase"})
                 else:
-                    t = tilemapbase.tiles.build_OSM()
+                    tiles = tilemapbase.tiles.build_OSM()
 
                 # Create the map folder
                 path_to_maps = os.path.join(timelapse_to_process, "maps")
@@ -194,7 +195,7 @@ try:
                     lat_list.append(lat)
                     lon_list.append(lon)
                     # Retrieve the maps and save it
-                    retrieve_save_map(lat_list, lon_list, t, datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S'), path_to_maps)
+                    retrieve_save_map(lat_list, lon_list, tiles, datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S'), path_to_maps)
                     time.sleep(0.01)
 
                 # Combine the map and the frame and generate the mp4 timelapse
@@ -207,7 +208,7 @@ try:
                     timestamp_date = datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S')
                     client.publish("process/timelapse_trip/timelapse_process_progress", 10+50+round(20*idx/len(images_sorted)))
                     video_out.write(combine(os.path.join(path_to_maps,timestamp_date)+".png", os.path.join(timelapse_to_process, timestamp_date)+".jpg",
-                     timestamp_date, gps_coords["latitude"].values[idx], gps_coords["longitude"].values[idx]))
+                                            timestamp_date, gps_coords["latitude"].values[idx], gps_coords["longitude"].values[idx]))
                     time.sleep(0.01)
                 video_out.release()
                 logging.info("Timelapse saved: " + result_folder + "/video.mp4")
