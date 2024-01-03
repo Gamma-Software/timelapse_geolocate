@@ -105,6 +105,9 @@ def combine(map_path, frame_path, timestamp, latitude, longitude):
     frame = cv2.imread(frame_path)
     x_offset = y_offset = 20
 
+    if frame is None:
+        return  # Skip if the frame is empty
+
     # Create a circle mask
     mask = np.zeros(frame.shape[:2], dtype="uint8")
     circle_radius = int(min(frame.shape[0], frame.shape[1])*0.2) # 20% of the min frame size
