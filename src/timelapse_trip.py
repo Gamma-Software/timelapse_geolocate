@@ -197,15 +197,14 @@ try:
                 # fill the N/A values with previous values
                 gps_coords.fillna(method='ffill', inplace=True)
                 gps_coords.fillna(method='bfill', inplace=True) # Fill in the first value
+                continue_without_map = False
                 if gps_coords.empty:
-                    logging.warning("The gps coordinates corresponding are not retrieved in the influxdb database. The timelapse frames without the map")
-                    shutil.rmtree(timelapse_to_process)
-                    break
+                    logging.warning("The gps coordinates corresponding are not retrieved in the influxdb database. The timelapse generate continues without the map")
+                    continue_without_map = True
                 if gps_coords.isnull().values.any(): # Still got NaN values
-                    logging.warning("The gps coordinates corresponding are still null. The timelapse frames without the map")
-                    shutil.rmtree(timelapse_to_process)
-                    break
-
+                    logging.warning("The gps coordinates corresponding are still null. The timelapse generation continues frames without the map")
+                    continue_without_map = True
+                continue_without_map = True
 
                 # Construct the map
                 if conf["map_generation_mean"] == "local":
@@ -222,28 +221,35 @@ try:
                 os.chmod(path_to_maps, 0o775) # Give all read access but Rudloff write access
                 lat_list = []
                 lon_list = []
-                for lat, lon, timestamp in zip(gps_coords["latitude"].tolist(), gps_coords["longitude"].tolist(), gps_coords.index) :
-                    client.publish("process/timelapse_trip/timelapse_process_progress", 10+round(50*len(lat_list)/len(gps_coords["latitude"].tolist())))
-                    lat_list.append(lat)
-                    lon_list.append(lon)
-                    # Retrieve the maps and save it
-                    retrieve_save_map(lat_list, lon_list, tiles, datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S'), path_to_maps)
-                    time.sleep(0.01)
+                if not continue_without_map:
+                    for lat, lon, timestamp in zip(gps_coords["latitude"].tolist(), gps_coords["longitude"].tolist(), gps_coords.index) :
+                        client.publish("process/timelapse_trip/timelapse_process_progress", 10+round(50*len(lat_list)/len(gps_coords["latitude"].tolist())))
+                        lat_list.append(lat)
+                        lon_list.append(lon)
+                        # Retrieve the maps and save it
+                        retrieve_save_map(lat_list, lon_list, tiles, datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S'), path_to_maps)
+                        time.sleep(0.01)
 
                 # Combine the map and the frame and generate the mp4 timelapse
                 frameSize = (2304, 1296)
                 result_folder = path_to_current_results + "/" + os.path.basename(timelapse_to_process)
                 os.makedirs(result_folder, 0o740)
                 video_out = cv2.VideoWriter(result_folder + "/video.mp4",
-                 cv2.VideoWriter_fourcc(*'mp4v'), 10, frameSize)
-                for idx, timestamp in enumerate(gps_coords.index):
-                    timestamp_date = datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S')
-                    client.publish("process/timelapse_trip/timelapse_process_progress", 10+50+round(20*idx/len(images_sorted)))
-                    video_frame = combine(os.path.join(path_to_maps,timestamp_date)+".png", os.path.join(timelapse_to_process, timestamp_date)+".jpg",
-                                          timestamp_date, gps_coords["latitude"].values[idx], gps_coords["longitude"].values[idx])
-                    if video_frame is not None:
-                        video_out.write(video_frame)
-                    time.sleep(0.01)
+                cv2.VideoWriter_fourcc(*'mp4v'), 10, frameSize)
+                if not continue_without_map:
+                    for idx, timestamp in enumerate(gps_coords.index):
+                        timestamp_date = datetime.strftime(timestamp, '%Y-%m-%d_%H-%M-%S')
+                        client.publish("process/timelapse_trip/timelapse_process_progress", 10+50+round(20*idx/len(images_sorted)))
+                        video_frame = combine(os.path.join(path_to_maps,timestamp_date)+".png", os.path.join(timelapse_to_process, timestamp_date)+".jpg",
+                                            timestamp_date, gps_coords["latitude"].values[idx], gps_coords["longitude"].values[idx])
+                        if video_frame is not None:
+                            video_out.write(video_frame)
+                        time.sleep(0.01)
+                else:
+                    for idx, image_path in enumerate(images_sorted):
+                        video_frame = cv2.imread(os.path.join(timelapse_to_process, image_path))
+                        if video_frame is not None:
+                            video_out.write(video_frame)
                 video_out.release()
                 logging.info("Timelapse saved: " + result_folder + "/video.mp4")
 
