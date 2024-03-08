@@ -180,7 +180,8 @@ try:
                 # Generate video for at least 5 minutes of images (300 images)
                 if len(images_sorted) < 300:
                     logging.warning("The timelapse is too short (" + str(len(images_sorted)) + " images). The timelapse is not generated")
-                    shutil.rmtree(timelapse_to_process)
+                    #shutil.rmtree(timelapse_to_process)
+                    shutil.move(timelapse_to_process, f"/home/rudloff/timelapse_backup/{dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}/photo")
                     break
 
                 # Keep only jpg files
@@ -215,7 +216,8 @@ try:
                 # Create the map folder
                 path_to_maps = os.path.join(timelapse_to_process, "maps")
                 if os.path.exists(path_to_maps):
-                    shutil.rmtree(path_to_maps)
+                    #shutil.rmtree(path_to_maps)
+                    shutil.move(timelapse_to_process, f"/home/rudloff/timelapse_backup/{dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}maps")
                 os.makedirs(path_to_maps, 0o740)
                 os.chown(path_to_maps, 1000, 1000) # Rudloff id and group Root
                 os.chmod(path_to_maps, 0o775) # Give all read access but Rudloff write access
@@ -255,7 +257,8 @@ try:
 
                 # Remove the maps folder
                 if os.path.exists(path_to_maps):
-                    shutil.rmtree(path_to_maps)
+                    #shutil.rmtree(path_to_maps)
+                    shutil.move(timelapse_to_process, f"/home/rudloff/timelapse_backup/{dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}/map")
                     logging.info("Remove maps folder")
                 client.publish("process/timelapse_trip/timelapse_process_progress", 100)
 
